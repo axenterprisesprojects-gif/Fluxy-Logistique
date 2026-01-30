@@ -73,6 +73,7 @@ export default function NewDelivery() {
 
     try {
       setLoading(true);
+      console.log('Creating delivery...');
       const result = await createDelivery({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
@@ -80,13 +81,26 @@ export default function NewDelivery() {
         destination_area: destinationArea.trim(),
       });
       
-      Alert.alert(
-        'Succès', 
-        `Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`, 
-        [{ text: 'OK', onPress: () => router.push('/(business)/deliveries') }]
-      );
+      console.log('Delivery created:', result);
+      
+      // Show success and navigate
+      if (Platform.OS === 'web') {
+        window.alert(`Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`);
+        router.push('/(business)/deliveries');
+      } else {
+        Alert.alert(
+          'Succès', 
+          `Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`, 
+          [{ text: 'OK', onPress: () => router.push('/(business)/deliveries') }]
+        );
+      }
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de créer la livraison');
+      console.error('Error creating delivery:', error);
+      if (Platform.OS === 'web') {
+        window.alert(error.message || 'Impossible de créer la livraison');
+      } else {
+        Alert.alert('Erreur', error.message || 'Impossible de créer la livraison');
+      }
     } finally {
       setLoading(false);
     }
