@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
+import { showAlert, showDestructiveConfirm } from '../../src/utils/alert';
 import Button from '../../src/components/Button';
 import Input from '../../src/components/Input';
 import Card from '../../src/components/Card';
@@ -23,7 +24,7 @@ export default function BusinessProfile() {
 
   const handleSave = async () => {
     if (!businessName.trim() || !businessAddress.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      showAlert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
@@ -35,29 +36,25 @@ export default function BusinessProfile() {
       });
       await refreshUser();
       setEditing(false);
-      Alert.alert('Succès', 'Profil mis à jour');
+      showAlert('Succès', 'Profil mis à jour');
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de mettre à jour le profil');
+      showAlert('Erreur', error.message || 'Impossible de mettre à jour le profil');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert(
+    showDestructiveConfirm(
       'Déconnexion',
       'Êtes-vous sûr de vouloir vous déconnecter ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/');
-          },
-        },
-      ]
+      async () => {
+        await logout();
+        router.replace('/');
+      },
+      undefined,
+      'Déconnexion',
+      'Annuler'
     );
   };
 
