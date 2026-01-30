@@ -528,6 +528,43 @@ async def business_login(data: BusinessLoginRequest, response: Response):
     
     return {"user": user, "session_token": session_token}
 
+@api_router.post("/auth/admin/login")
+async def admin_login(data: BusinessLoginRequest, response: Response):
+    """Login admin with email/password"""
+    email = data.email.strip().lower()
+    
+    # Find admin user
+    user_doc = await db.users.find_one({"email": email, "role": "admin"})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    # Verify password
+    if not user_doc.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Mot de passe non configuré")
+    
+    if not verify_password(data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    user_id = user_doc["user_id"]
+    
+    # Create session
+    session_token = f"admin_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
 @api_router.get("/auth/me")
 async def get_me(user: User = Depends(require_user)):
     """Get current user data"""
