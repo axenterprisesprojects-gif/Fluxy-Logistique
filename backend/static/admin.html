@@ -788,7 +788,7 @@
                         sessionToken = data.session_token;
                         currentUser = data.user;
                         
-                        window.history.replaceState({}, '', '/admin');
+                        window.history.replaceState({}, '', '/api/admin');
                         
                         if (currentUser.role === 'admin') {
                             showDashboard();
