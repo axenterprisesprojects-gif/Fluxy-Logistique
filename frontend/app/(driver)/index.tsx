@@ -743,4 +743,71 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     textAlign: 'center',
   },
+  timeSlotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.warning + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  timeSlotText: {
+    fontSize: 12,
+    color: COLORS.warning,
+    fontWeight: '600',
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  distanceBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  earningsBreakdown: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  earningsLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  earningsLineLabel: {
+    fontSize: 13,
+    color: COLORS.gray[600],
+  },
+  earningsLineValue: {
+    fontSize: 13,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+  earningsLineValueNegative: {
+    fontSize: 13,
+    color: COLORS.error,
+    fontWeight: '500',
+  },
+  earningsDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray[200],
+    marginVertical: 6,
+  },
+  earningsNetLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
+  earningsNetValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
 });
