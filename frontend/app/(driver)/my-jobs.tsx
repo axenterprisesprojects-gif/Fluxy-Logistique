@@ -47,7 +47,7 @@ export default function MyJobs() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission requise', 'Veuillez autoriser l\'accès à la caméra');
+        showAlert('Permission requise', 'Veuillez autoriser l\'accès à la caméra');
         return;
       }
 
@@ -62,7 +62,7 @@ export default function MyJobs() {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Erreur', 'Impossible de prendre la photo');
+      showAlert('Erreur', 'Impossible de prendre la photo');
     }
   };
 
@@ -70,7 +70,7 @@ export default function MyJobs() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission requise', 'Veuillez autoriser l\'accès à la galerie');
+        showAlert('Permission requise', 'Veuillez autoriser l\'accès à la galerie');
         return;
       }
 
