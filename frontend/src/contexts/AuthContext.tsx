@@ -34,7 +34,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   sessionToken: string | null;
   loginWithGoogle: (role: 'business' | 'admin') => Promise<void>;
-  loginAsDriver: (phone: string, name?: string) => Promise<void>;
+  loginAsDriver: (phone: string, password: string) => Promise<void>;
+  registerDriver: (phone: string, password: string, name: string) => Promise<void>;
   loginAsBusiness: (email: string, password: string) => Promise<void>;
   registerBusiness: (data: { email: string; password: string; name: string; business_name: string; business_address: string }) => Promise<void>;
   logout: () => Promise<void>;
