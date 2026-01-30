@@ -36,18 +36,18 @@ export default function DriverLayout() {
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'Missions',
+          title: 'En cours',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <Ionicons name="car" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="my-jobs"
         options={{
-          title: 'Mes courses',
+          title: 'Finances',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="car" size={size} color={color} />
+            <Ionicons name="wallet" size={size} color={color} />
           ),
         }}
       />
