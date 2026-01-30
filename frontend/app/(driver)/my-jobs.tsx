@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, Alert, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Modal, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useApi } from '../../src/hooks/useApi';
+import { showAlert } from '../../src/utils/alert';
 import Card from '../../src/components/Card';
 import Button from '../../src/components/Button';
 import StatusBadge from '../../src/components/StatusBadge';
