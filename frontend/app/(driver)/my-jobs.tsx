@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
@@ -13,6 +13,8 @@ export default function Finances() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const loadJobs = async () => {
     try {
@@ -47,24 +49,51 @@ export default function Finances() {
   // Group by day for recent transactions
   const recentCompleted = completedJobs
     .sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime())
-    .slice(0, 10);
+    .slice(0, 20);
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
     const date = new Date(dateStr);
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatFullDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const openJobDetail = (job: any) => {
+    setSelectedJob(job);
+    setDetailModalVisible(true);
+  };
+
   const renderTransactionItem = ({ item }: { item: any }) => (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity 
+      style={styles.transactionItem}
+      onPress={() => openJobDetail(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.transactionIcon}>
         <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
       </View>
       <View style={styles.transactionContent}>
         <Text style={styles.transactionTitle}>{item.destination_area}</Text>
+        <Text style={styles.transactionSubtitle}>{item.business_name}</Text>
         <Text style={styles.transactionDate}>{formatDate(item.delivered_at || item.created_at)}</Text>
       </View>
-      <Text style={styles.transactionAmount}>+{item.driver_earnings?.toLocaleString()} F</Text>
-    </View>
+      <View style={styles.transactionRight}>
+        <Text style={styles.transactionAmount}>+{item.driver_earnings?.toLocaleString()} F</Text>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.gray[400]} />
+      </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -151,7 +180,10 @@ export default function Finances() {
       </View>
 
       {/* Transactions Header */}
-      <Text style={styles.sectionTitle}>Historique des gains</Text>
+      <View style={styles.transactionsHeader}>
+        <Text style={styles.sectionTitle}>Historique des gains</Text>
+        <Text style={styles.sectionSubtitle}>Cliquez pour voir les détails</Text>
+      </View>
     </>
   );
 
@@ -174,6 +206,170 @@ export default function Finances() {
           </View>
         }
       />
+
+      {/* Detail Modal */}
+      <Modal
+        visible={detailModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedJob && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Détails de la livraison</Text>
+                  <TouchableOpacity 
+                    style={styles.modalCloseBtn}
+                    onPress={() => setDetailModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Earnings Badge */}
+                <View style={styles.earningsBadge}>
+                  <Text style={styles.earningsBadgeLabel}>Vos gains</Text>
+                  <Text style={styles.earningsBadgeValue}>
+                    +{selectedJob.driver_earnings?.toLocaleString()} F
+                  </Text>
+                </View>
+
+                {/* Business Info */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="business" size={20} color={COLORS.primary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Boutique</Text>
+                      <Text style={styles.detailValue}>{selectedJob.business_name}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Customer Info */}
+                {selectedJob.customer_name && (
+                  <View style={styles.detailSection}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="person" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Client</Text>
+                        <Text style={styles.detailValue}>{selectedJob.customer_name}</Text>
+                        {selectedJob.customer_phone && (
+                          <Text style={styles.detailSubvalue}>{selectedJob.customer_phone}</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Items */}
+                {(selectedJob.item_description || selectedJob.item_type) && (
+                  <View style={styles.detailSection}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="cube" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Articles transportés</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedJob.item_description || selectedJob.item_type}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Route */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="location" size={20} color={COLORS.primary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Récupération</Text>
+                      <Text style={styles.detailValue}>{selectedJob.pickup_address}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.detailRow, { marginTop: 12 }]}>
+                    <Ionicons name="flag" size={20} color={COLORS.secondary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Livraison</Text>
+                      <Text style={styles.detailValue}>{selectedJob.destination_area}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Timestamps */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.timestampTitle}>Chronologie</Text>
+                  
+                  <View style={styles.timestampRow}>
+                    <View style={[styles.timestampDot, { backgroundColor: COLORS.gray[400] }]} />
+                    <View style={styles.timestampContent}>
+                      <Text style={styles.timestampLabel}>Commande créée</Text>
+                      <Text style={styles.timestampValue}>{formatFullDate(selectedJob.created_at)}</Text>
+                    </View>
+                  </View>
+
+                  {selectedJob.accepted_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.info }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Acceptée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.accepted_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {selectedJob.pickup_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.primary }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Récupérée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.pickup_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {selectedJob.delivered_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.secondary }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Livrée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.delivered_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {/* Financial Breakdown */}
+                <View style={styles.financialSection}>
+                  <Text style={styles.financialTitle}>Détail financier</Text>
+                  <View style={styles.financialRow}>
+                    <Text style={styles.financialLabel}>Prix total</Text>
+                    <Text style={styles.financialValue}>{selectedJob.total_price?.toLocaleString()} F</Text>
+                  </View>
+                  <View style={styles.financialRow}>
+                    <Text style={styles.financialLabel}>Commission plateforme (15%)</Text>
+                    <Text style={styles.financialValueNegative}>-{selectedJob.commission?.toLocaleString()} F</Text>
+                  </View>
+                  <View style={styles.financialDivider} />
+                  <View style={styles.financialRow}>
+                    <Text style={styles.financialLabelBold}>Net perçu</Text>
+                    <Text style={styles.financialValueBold}>{selectedJob.driver_earnings?.toLocaleString()} F</Text>
+                  </View>
+                </View>
+
+                {/* Close Button */}
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setDetailModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Fermer</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -314,12 +510,19 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.gray[100],
   },
+  transactionsHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.gray[800],
-    paddingHorizontal: 20,
-    marginBottom: 12,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: COLORS.gray[500],
+    marginTop: 2,
   },
   transactionItem: {
     flexDirection: 'row',
@@ -348,10 +551,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray[800],
   },
+  transactionSubtitle: {
+    fontSize: 13,
+    color: COLORS.gray[600],
+    marginTop: 2,
+  },
   transactionDate: {
     fontSize: 12,
     color: COLORS.gray[500],
     marginTop: 2,
+  },
+  transactionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   transactionAmount: {
     fontSize: 16,
@@ -372,5 +585,167 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray[400],
     marginTop: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.gray[900],
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  earningsBadge: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  earningsBadgeLabel: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    marginBottom: 4,
+  },
+  earningsBadgeValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  detailSection: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  detailContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+    marginTop: 4,
+  },
+  detailSubvalue: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    marginTop: 2,
+  },
+  timestampTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: 16,
+  },
+  timestampRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  timestampDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  timestampContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  timestampLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.gray[700],
+  },
+  timestampValue: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginTop: 2,
+  },
+  financialSection: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  financialTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: 12,
+  },
+  financialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  financialLabel: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+  },
+  financialLabelBold: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
+  financialValue: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+  },
+  financialValueNegative: {
+    fontSize: 14,
+    color: COLORS.error,
+  },
+  financialValueBold: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  financialDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray[200],
+    marginVertical: 8,
+  },
+  closeButton: {
+    backgroundColor: COLORS.gray[100],
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
   },
 });
