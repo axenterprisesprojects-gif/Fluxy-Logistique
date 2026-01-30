@@ -328,11 +328,11 @@ export default function DriverHome() {
           <Text style={styles.statNumber}>{activeJobs.length}</Text>
           <Text style={styles.statLabel}>En cours</Text>
         </View>
-        <View style={[styles.statCard, styles.earningsCard]}>
-          <Text style={[styles.statNumber, styles.earningsNumber]}>
-            {totalEarnings.toLocaleString()}
+        <View style={[styles.statCard, styles.deliveredCard]}>
+          <Text style={[styles.statNumber, styles.deliveredNumber]}>
+            {completedJobs.length}
           </Text>
-          <Text style={styles.statLabel}>Gains (F)</Text>
+          <Text style={styles.statLabel}>Livrés</Text>
         </View>
       </View>
 
