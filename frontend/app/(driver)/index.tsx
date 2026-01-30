@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
 import Card from '../../src/components/Card';
-import Button from '../../src/components/Button';
+import SwipeToAccept from '../../src/components/SwipeToAccept';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
 
 const FILTERS = [
