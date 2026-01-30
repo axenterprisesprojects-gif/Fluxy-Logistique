@@ -85,7 +85,7 @@ export default function MyJobs() {
       }
     } catch (error) {
       console.error('Error picking photo:', error);
-      Alert.alert('Erreur', 'Impossible de sélectionner la photo');
+      showAlert('Erreur', 'Impossible de sélectionner la photo');
     }
   };
 
@@ -100,15 +100,15 @@ export default function MyJobs() {
 
       if (photoType === 'pickup') {
         await confirmPickup(selectedJob.delivery_id, photoData);
-        Alert.alert('Succès', 'Récupération confirmée !');
+        showAlert('Succès', 'Récupération confirmée !');
       } else {
         await confirmDelivery(selectedJob.delivery_id, photoData);
-        Alert.alert('Succès', 'Livraison confirmée !');
+        showAlert('Succès', 'Livraison confirmée !');
       }
 
       await loadJobs();
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de confirmer');
+      showAlert('Erreur', error.message || 'Impossible de confirmer');
     } finally {
       setProcessingId(null);
       setSelectedJob(null);
