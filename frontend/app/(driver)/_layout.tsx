@@ -36,9 +36,9 @@ export default function DriverLayout() {
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'En cours',
+          title: 'Historique',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="car" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
