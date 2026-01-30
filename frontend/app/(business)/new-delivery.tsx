@@ -34,7 +34,7 @@ export default function NewDelivery() {
 
   const handleSaveProfile = async () => {
     if (!businessName.trim() || !businessAddress.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      showAlert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
@@ -47,7 +47,7 @@ export default function NewDelivery() {
       await refreshUser();
       setStep(2);
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de sauvegarder le profil');
+      showAlert('Erreur', error.message || 'Impossible de sauvegarder le profil');
     } finally {
       setLoading(false);
     }
