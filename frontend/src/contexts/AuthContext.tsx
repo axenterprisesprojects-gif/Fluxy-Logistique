@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginAsDriver = async (phone: string, name?: string) => {
+  const loginAsDriver = async (phone: string, password: string) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/auth/driver/login`, {
@@ -162,11 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone, name }),
+        body: JSON.stringify({ phone, password }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to login');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Échec de la connexion');
       }
 
       const data = await response.json();
@@ -176,6 +177,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
     } catch (error) {
       console.error('Driver login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerDriver = async (phone: string, password: string, name: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/driver/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone, password, name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Échec de l\'inscription');
+      }
+
+      const data = await response.json();
+      
+      await AsyncStorage.setItem('session_token', data.session_token);
+      setSessionToken(data.session_token);
+      setUser(data.user);
+    } catch (error) {
+      console.error('Driver register error:', error);
       throw error;
     } finally {
       setIsLoading(false);
