@@ -218,6 +218,8 @@ class QuickHaulTester:
                 self.admin_token = result.get("session_token")
                 self.log("✅ Admin login successful")
                 self.log(f"Admin user: {result.get('user', {}).get('name', 'Unknown')}")
+                self.log(f"Admin role: {result.get('user', {}).get('role', 'Unknown')}")
+                self.log(f"Admin token: {self.admin_token[:20]}..." if self.admin_token else "No token")
                 return True
             else:
                 self.log(f"❌ Admin login failed: {response.text}", "ERROR")
