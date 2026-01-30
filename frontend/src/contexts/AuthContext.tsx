@@ -181,6 +181,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginAsBusiness = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/business/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Échec de la connexion');
+      }
+
+      const data = await response.json();
+      
+      await AsyncStorage.setItem('session_token', data.session_token);
+      setSessionToken(data.session_token);
+      setUser(data.user);
+    } catch (error) {
+      console.error('Business login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerBusiness = async (data: { email: string; password: string; name: string; business_name: string; business_address: string }) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/business/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Échec de l\'inscription');
+      }
+
+      const result = await response.json();
+      
+      await AsyncStorage.setItem('session_token', result.session_token);
+      setSessionToken(result.session_token);
+      setUser(result.user);
+    } catch (error) {
+      console.error('Business register error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       if (sessionToken) {
