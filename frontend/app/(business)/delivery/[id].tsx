@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useApi } from '../../src/hooks/useApi';
-import { showAlert } from '../../src/utils/alert';
-import Card from '../../src/components/Card';
-import Button from '../../src/components/Button';
-import StatusBadge from '../../src/components/StatusBadge';
-import LoadingScreen from '../../src/components/LoadingScreen';
-import { COLORS } from '../../src/constants/theme';
+import { showAlert } from '../../../src/utils/alert';
+import Card from '../../../src/components/Card';
+import Button from '../../../src/components/Button';
+import StatusBadge from '../../../src/components/StatusBadge';
+import LoadingScreen from '../../../src/components/LoadingScreen';
+import { COLORS } from '../../../src/constants/theme';
+import { useApi } from '../../../src/hooks/useApi';
 
 export default function DeliveryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
