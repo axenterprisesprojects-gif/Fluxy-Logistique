@@ -464,6 +464,165 @@ export default function DriverHome() {
         }
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Current Delivery Modal */}
+      <Modal
+        visible={showCurrentDeliveryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCurrentDeliveryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {currentActiveJob && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Livraison en cours</Text>
+                  <TouchableOpacity 
+                    style={styles.modalCloseBtn}
+                    onPress={() => setShowCurrentDeliveryModal(false)}
+                  >
+                    <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Status Badge */}
+                <View style={[
+                  styles.modalStatusBadge, 
+                  currentActiveJob.status === 'accepted' ? styles.modalStatusPickup : styles.modalStatusDelivery
+                ]}>
+                  <Ionicons 
+                    name={currentActiveJob.status === 'accepted' ? 'navigate' : 'bicycle'} 
+                    size={24} 
+                    color={COLORS.white} 
+                  />
+                  <Text style={styles.modalStatusText}>
+                    {currentActiveJob.status === 'accepted' ? 'En route vers récupération' : 'En cours de livraison'}
+                  </Text>
+                </View>
+
+                {/* Earnings Badge */}
+                <View style={styles.modalEarningsBadge}>
+                  <Text style={styles.modalEarningsLabel}>Vos gains pour cette course</Text>
+                  <Text style={styles.modalEarningsValue}>
+                    {currentActiveJob.driver_earnings?.toLocaleString()} F
+                  </Text>
+                </View>
+
+                {/* Business Info */}
+                <View style={styles.modalSection}>
+                  <View style={styles.modalSectionRow}>
+                    <Ionicons name="business" size={20} color={COLORS.primary} />
+                    <View style={styles.modalSectionContent}>
+                      <Text style={styles.modalSectionLabel}>Boutique</Text>
+                      <Text style={styles.modalSectionValue}>{currentActiveJob.business_name}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Customer Info */}
+                {currentActiveJob.customer_name && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalSectionRow}>
+                      <Ionicons name="person" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.modalSectionContent}>
+                        <Text style={styles.modalSectionLabel}>Client</Text>
+                        <Text style={styles.modalSectionValue}>{currentActiveJob.customer_name}</Text>
+                        {currentActiveJob.customer_phone && (
+                          <Text style={styles.modalSectionSubvalue}>{currentActiveJob.customer_phone}</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Items */}
+                {(currentActiveJob.item_description || currentActiveJob.item_type) && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalSectionRow}>
+                      <Ionicons name="cube" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.modalSectionContent}>
+                        <Text style={styles.modalSectionLabel}>Articles à transporter</Text>
+                        <Text style={styles.modalSectionValue}>
+                          {currentActiveJob.item_description || currentActiveJob.item_type}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Route */}
+                <View style={styles.modalSection}>
+                  <View style={styles.modalSectionRow}>
+                    <Ionicons name="location" size={20} color={COLORS.primary} />
+                    <View style={styles.modalSectionContent}>
+                      <Text style={styles.modalSectionLabel}>Récupération</Text>
+                      <Text style={styles.modalSectionValue}>{currentActiveJob.pickup_address}</Text>
+                      {currentActiveJob.status === 'accepted' && (
+                        <View style={styles.currentStepBadge}>
+                          <Text style={styles.currentStepBadgeText}>Étape actuelle</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <View style={[styles.modalSectionRow, { marginTop: 12 }]}>
+                    <Ionicons name="flag" size={20} color={COLORS.secondary} />
+                    <View style={styles.modalSectionContent}>
+                      <Text style={styles.modalSectionLabel}>Livraison</Text>
+                      <Text style={styles.modalSectionValue}>{currentActiveJob.destination_area}</Text>
+                      {currentActiveJob.status === 'pickup_confirmed' && (
+                        <View style={styles.currentStepBadge}>
+                          <Text style={styles.currentStepBadgeText}>Étape actuelle</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.modalActions}>
+                  {currentActiveJob.status === 'accepted' && (
+                    <TouchableOpacity
+                      style={[styles.modalActionBtn, styles.modalActionBtnPickup]}
+                      onPress={handleConfirmPickup}
+                      disabled={processingAction}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
+                      <Text style={styles.modalActionBtnText}>
+                        {processingAction ? 'Confirmation...' : 'Commande récupérée'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {currentActiveJob.status === 'pickup_confirmed' && (
+                    <TouchableOpacity
+                      style={[styles.modalActionBtn, styles.modalActionBtnDelivery]}
+                      onPress={handleConfirmDelivery}
+                      disabled={processingAction}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="flag" size={24} color={COLORS.white} />
+                      <Text style={styles.modalActionBtnText}>
+                        {processingAction ? 'Confirmation...' : 'Commande livrée'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Close Button */}
+                <TouchableOpacity 
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowCurrentDeliveryModal(false)}
+                >
+                  <Text style={styles.modalCloseButtonText}>Fermer</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
