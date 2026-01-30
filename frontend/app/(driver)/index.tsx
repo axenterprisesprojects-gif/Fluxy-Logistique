@@ -99,6 +99,10 @@ export default function DriverHome() {
 
   const needsProfileSetup = !user?.vehicle_type || !user?.vehicle_plate;
   const isValidated = user?.is_validated;
+  
+  // Check if driver has an active delivery (cannot accept new ones)
+  const hasActiveDelivery = activeJobs.length > 0;
+  const currentActiveJob = activeJobs[0]; // The current delivery in progress
 
   const renderMissionItem = ({ item }: { item: any }) => {
     const isMyJob = myJobs.some(j => j.delivery_id === item.delivery_id);
