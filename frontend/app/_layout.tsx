@@ -16,7 +16,6 @@ export default function RootLayout() {
             <Stack.Screen name="auth-callback" />
             <Stack.Screen name="(business)" />
             <Stack.Screen name="(driver)" />
-            <Stack.Screen name="(admin)" />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>
