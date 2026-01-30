@@ -94,6 +94,18 @@ class DriverDocument(BaseModel):
     document_type: str  # license, insurance, vehicle_registration
     document_image: str  # base64
 
+# Business Auth Models
+class BusinessRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    business_name: str
+    business_address: str
+
+class BusinessLoginRequest(BaseModel):
+    email: str
+    password: str
+
 # Session Models
 class UserSession(BaseModel):
     session_id: str
