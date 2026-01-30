@@ -223,3 +223,5 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Backend API fully tested via curl. All endpoints working: driver login, business delivery creation, job acceptance, admin dashboard, pricing management. Frontend screens created but needs visual testing."
+  - agent: "main"
+    message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
