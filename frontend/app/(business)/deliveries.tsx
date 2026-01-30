@@ -251,6 +251,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignSelf: 'flex-start',
     marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   deliveryCode: {
     fontSize: 14,
