@@ -127,8 +127,6 @@ export default function DriverProfile() {
       'Annuler'
     );
   };
-    );
-  };
 
   const getDocumentStatus = (docType: string) => {
     const doc = user?.documents?.find((d: any) => d.document_type === docType);
