@@ -61,63 +61,69 @@ export default function Deliveries() {
   }, []);
 
   const renderDeliveryItem = ({ item }: { item: any }) => (
-    <Card style={styles.deliveryCard}>
-      <View style={styles.deliveryHeader}>
-        <View style={styles.deliveryInfo}>
-          <View style={styles.codeContainer}>
-            <Text style={styles.deliveryCode}>{item.delivery_code || item.delivery_id}</Text>
+    <TouchableOpacity 
+      onPress={() => router.push(`/(business)/delivery/${item.delivery_id}`)}
+      activeOpacity={0.7}
+    >
+      <Card style={styles.deliveryCard}>
+        <View style={styles.deliveryHeader}>
+          <View style={styles.deliveryInfo}>
+            <View style={styles.codeContainer}>
+              <Text style={styles.deliveryCode}>{item.delivery_code || item.delivery_id}</Text>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.gray[400]} />
+            </View>
+            {item.customer_name && (
+              <Text style={styles.customerName}>{item.customer_name}</Text>
+            )}
+            <View style={styles.locationRow}>
+              <Ionicons name="location" size={14} color={COLORS.gray[400]} />
+              <Text style={styles.deliveryDestination}>{item.destination_area}</Text>
+            </View>
           </View>
-          {item.customer_name && (
-            <Text style={styles.customerName}>{item.customer_name}</Text>
-          )}
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={14} color={COLORS.gray[400]} />
-            <Text style={styles.deliveryDestination}>{item.destination_area}</Text>
-          </View>
+          <StatusBadge status={item.status} />
         </View>
-        <StatusBadge status={item.status} />
-      </View>
 
-      {/* Items description */}
-      {item.item_description && (
-        <View style={styles.itemsContainer}>
-          <Text style={styles.itemsLabel}>Articles:</Text>
-          <Text style={styles.itemsText}>{item.item_description}</Text>
-        </View>
-      )}
-
-      <View style={styles.deliveryDetails}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Distance</Text>
-          <Text style={styles.detailValue}>{item.distance_km} km</Text>
-        </View>
-        {item.customer_phone && (
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Téléphone</Text>
-            <Text style={styles.detailValue}>{item.customer_phone}</Text>
+        {/* Items description */}
+        {item.item_description && (
+          <View style={styles.itemsContainer}>
+            <Text style={styles.itemsLabel}>Articles:</Text>
+            <Text style={styles.itemsText}>{item.item_description}</Text>
           </View>
         )}
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Prix</Text>
-          <Text style={[styles.detailValue, styles.priceValue]}>
-            {item.total_price.toLocaleString()} F
+
+        <View style={styles.deliveryDetails}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Distance</Text>
+            <Text style={styles.detailValue}>{item.distance_km} km</Text>
+          </View>
+          {item.customer_phone && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Téléphone</Text>
+              <Text style={styles.detailValue}>{item.customer_phone}</Text>
+            </View>
+          )}
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Prix</Text>
+            <Text style={[styles.detailValue, styles.priceValue]}>
+              {item.total_price.toLocaleString()} F
+            </Text>
+          </View>
+        </View>
+
+        {item.driver_name && (
+          <View style={styles.driverInfo}>
+            <Ionicons name="person" size={16} color={COLORS.secondary} />
+            <Text style={styles.driverName}>Chauffeur: {item.driver_name}</Text>
+          </View>
+        )}
+
+        <View style={styles.deliveryFooter}>
+          <Text style={styles.deliveryDate}>
+            Créé le {new Date(item.created_at).toLocaleDateString('fr-FR')}
           </Text>
         </View>
-      </View>
-
-      {item.driver_name && (
-        <View style={styles.driverInfo}>
-          <Ionicons name="person" size={16} color={COLORS.secondary} />
-          <Text style={styles.driverName}>Chauffeur: {item.driver_name}</Text>
-        </View>
-      )}
-
-      <View style={styles.deliveryFooter}>
-        <Text style={styles.deliveryDate}>
-          Créé le {new Date(item.created_at).toLocaleDateString('fr-FR')}
-        </Text>
-      </View>
-    </Card>
+      </Card>
+    </TouchableOpacity>
   );
 
   if (loading) {
