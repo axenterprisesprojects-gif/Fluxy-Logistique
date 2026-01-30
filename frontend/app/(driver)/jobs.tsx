@@ -589,6 +589,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
   },
+  skipPhotoLink: {
+    alignItems: 'center',
+    paddingTop: 16,
+  },
+  skipPhotoText: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+    textDecorationLine: 'underline',
+  },
   photoLink: {
     flexDirection: 'row',
     alignItems: 'center',
