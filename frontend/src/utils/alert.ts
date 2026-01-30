@@ -4,10 +4,12 @@ import { Alert, Platform } from 'react-native';
  * Cross-platform alert utility that works on both web and mobile
  */
 
-export const showAlert = (title: string, message: string, onOk?: () => void) => {
+export const showAlert = (title: string, message: string, onOk?: () => void | Promise<void>) => {
   if (Platform.OS === 'web') {
     window.alert(`${title}\n\n${message}`);
-    if (onOk) onOk();
+    if (onOk) {
+      Promise.resolve(onOk()).catch(console.error);
+    }
   } else {
     Alert.alert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
   }
@@ -16,17 +18,17 @@ export const showAlert = (title: string, message: string, onOk?: () => void) => 
 export const showConfirm = (
   title: string,
   message: string,
-  onConfirm: () => void,
-  onCancel?: () => void,
+  onConfirm: () => void | Promise<void>,
+  onCancel?: () => void | Promise<void>,
   confirmText: string = 'Confirmer',
   cancelText: string = 'Annuler'
 ) => {
   if (Platform.OS === 'web') {
     const result = window.confirm(`${title}\n\n${message}`);
     if (result) {
-      onConfirm();
+      Promise.resolve(onConfirm()).catch(console.error);
     } else if (onCancel) {
-      onCancel();
+      Promise.resolve(onCancel()).catch(console.error);
     }
   } else {
     Alert.alert(title, message, [
@@ -39,17 +41,17 @@ export const showConfirm = (
 export const showDestructiveConfirm = (
   title: string,
   message: string,
-  onConfirm: () => void,
-  onCancel?: () => void,
+  onConfirm: () => void | Promise<void>,
+  onCancel?: () => void | Promise<void>,
   confirmText: string = 'Confirmer',
   cancelText: string = 'Annuler'
 ) => {
   if (Platform.OS === 'web') {
     const result = window.confirm(`⚠️ ${title}\n\n${message}`);
     if (result) {
-      onConfirm();
+      Promise.resolve(onConfirm()).catch(console.error);
     } else if (onCancel) {
-      onCancel();
+      Promise.resolve(onCancel()).catch(console.error);
     }
   } else {
     Alert.alert(title, message, [
