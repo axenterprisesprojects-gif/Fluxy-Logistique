@@ -241,6 +241,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray[500],
   },
+  itemsBox: {
+    backgroundColor: COLORS.gray[50],
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  itemsLabel: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginBottom: 4,
+  },
+  itemsText: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+  },
   timeBadge: {
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
