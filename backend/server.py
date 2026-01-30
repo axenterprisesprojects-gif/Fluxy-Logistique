@@ -790,8 +790,8 @@ async def get_time_slots():
 # Include the router in the main app
 app.include_router(api_router)
 
-# Serve admin panel
-@app.get("/admin")
+# Serve admin panel at /api/admin
+@app.get("/api/admin")
 async def admin_panel():
     """Serve admin panel"""
     return FileResponse(ROOT_DIR / "static" / "admin.html")
