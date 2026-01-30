@@ -70,7 +70,7 @@ export default function LoginDriver() {
         <View style={styles.loginContainer}>
           <Input
             label="Numéro de téléphone"
-            placeholder="Ex: +225 07 00 00 00 00"
+            placeholder="Ex: +241 07 00 00 00"
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
