@@ -189,7 +189,7 @@ export default function NewDelivery() {
           />
           <Input
             label="Numéro du client"
-            placeholder="Ex: +225 07 00 00 00 00"
+            placeholder="Ex: +241 07 00 00 00"
             value={customerPhone}
             onChangeText={setCustomerPhone}
             keyboardType="phone-pad"
