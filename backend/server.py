@@ -370,7 +370,8 @@ async def driver_login(data: DriverLogin, response: Response):
     
     # Create session
     session_token = f"driver_session_{uuid.uuid4().hex}"
-    expires_at = datetime.now(timezone.utc).replace(day=datetime.now(timezone.utc).day + 7)
+    from datetime import timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
     await db.user_sessions.delete_many({"user_id": user_id})
     await db.user_sessions.insert_one({
