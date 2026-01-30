@@ -62,7 +62,12 @@ export default function Deliveries() {
     <Card style={styles.deliveryCard}>
       <View style={styles.deliveryHeader}>
         <View style={styles.deliveryInfo}>
-          <Text style={styles.deliveryType}>{item.item_type}</Text>
+          <View style={styles.codeContainer}>
+            <Text style={styles.deliveryCode}>{item.delivery_code || item.delivery_id}</Text>
+          </View>
+          {item.customer_name && (
+            <Text style={styles.customerName}>{item.customer_name}</Text>
+          )}
           <View style={styles.locationRow}>
             <Ionicons name="location" size={14} color={COLORS.gray[400]} />
             <Text style={styles.deliveryDestination}>{item.destination_area}</Text>
@@ -71,15 +76,25 @@ export default function Deliveries() {
         <StatusBadge status={item.status} />
       </View>
 
+      {/* Items description */}
+      {item.item_description && (
+        <View style={styles.itemsContainer}>
+          <Text style={styles.itemsLabel}>Articles:</Text>
+          <Text style={styles.itemsText}>{item.item_description}</Text>
+        </View>
+      )}
+
       <View style={styles.deliveryDetails}>
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Distance</Text>
           <Text style={styles.detailValue}>{item.distance_km} km</Text>
         </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Créneau</Text>
-          <Text style={styles.detailValue}>{item.time_slot}</Text>
-        </View>
+        {item.customer_phone && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Téléphone</Text>
+            <Text style={styles.detailValue}>{item.customer_phone}</Text>
+          </View>
+        )}
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Prix</Text>
           <Text style={[styles.detailValue, styles.priceValue]}>
