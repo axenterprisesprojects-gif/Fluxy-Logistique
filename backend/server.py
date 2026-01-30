@@ -794,6 +794,18 @@ async def accept_delivery(delivery_id: str, user: User = Depends(require_driver)
     if not user.is_validated:
         raise HTTPException(status_code=403, detail="Votre profil n'est pas encore validé")
     
+    # Check if driver already has an active delivery (not finished)
+    active_delivery = await db.delivery_requests.find_one({
+        "driver_id": user.user_id,
+        "status": {"$in": ["accepted", "pickup_confirmed"]}
+    })
+    
+    if active_delivery:
+        raise HTTPException(
+            status_code=400, 
+            detail="Vous avez déjà une livraison en cours. Terminez-la avant d'en accepter une nouvelle."
+        )
+    
     # Try to accept the job (atomic operation)
     result = await db.delivery_requests.update_one(
         {"delivery_id": delivery_id, "status": "pending"},
