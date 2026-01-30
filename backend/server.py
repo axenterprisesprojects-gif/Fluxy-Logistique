@@ -142,6 +142,7 @@ class PlatformSettings(BaseModel):
 # Delivery Models
 class DeliveryRequest(BaseModel):
     delivery_id: str = Field(default_factory=lambda: f"del_{uuid.uuid4().hex[:12]}")
+    delivery_code: str = Field(default_factory=lambda: f"QH{uuid.uuid4().hex[:6].upper()}")  # Code unique visible
     business_id: str
     business_name: str
     pickup_address: str
@@ -150,8 +151,13 @@ class DeliveryRequest(BaseModel):
     destination_area: str
     destination_lat: Optional[float] = None
     destination_lng: Optional[float] = None
-    item_type: str
-    time_slot: str  # ASAP, 1-2h, 2-4h, 4-8h
+    # New fields
+    customer_name: str = ""
+    customer_phone: str = ""
+    item_description: str = ""
+    # Legacy field kept for compatibility
+    item_type: Optional[str] = None
+    time_slot: Optional[str] = None  # ASAP, 1-2h, 2-4h, 4-8h
     distance_km: float = 0.0
     total_price: float = 0.0
     commission: float = 0.0
