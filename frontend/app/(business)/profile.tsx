@@ -116,7 +116,7 @@ export default function BusinessProfile() {
                 label="Adresse de récupération"
                 value={businessAddress}
                 onChangeText={setBusinessAddress}
-                placeholder="Ex: Zone industrielle, Abidjan"
+                placeholder="Ex: Zone industrielle, Libreville"
                 multiline
                 numberOfLines={2}
               />
