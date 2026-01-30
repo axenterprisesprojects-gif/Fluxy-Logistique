@@ -123,7 +123,7 @@ export default function NewDelivery() {
             />
             <Input
               label="Adresse de récupération"
-              placeholder="Ex: Zone industrielle, Abidjan"
+              placeholder="Ex: Zone industrielle, Libreville"
               value={businessAddress}
               onChangeText={setBusinessAddress}
               multiline
