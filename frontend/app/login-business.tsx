@@ -60,31 +60,17 @@ export default function LoginBusiness() {
     try {
       setLoading(true);
       
-      const endpoint = isLogin ? '/api/auth/business/login' : '/api/auth/business/register';
-      const body = isLogin 
-        ? { email: email.trim(), password }
-        : { 
-            email: email.trim(), 
-            password, 
-            name: name.trim(),
-            business_name: businessName.trim(),
-            business_address: businessAddress.trim()
-          };
-
-      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Une erreur est survenue');
+      if (isLogin) {
+        await loginAsBusiness(email.trim(), password);
+      } else {
+        await registerBusiness({
+          email: email.trim(),
+          password,
+          name: name.trim(),
+          business_name: businessName.trim(),
+          business_address: businessAddress.trim()
+        });
       }
-
-      // Save session token
-      await AsyncStorage.setItem('session_token', data.session_token);
       
       // Navigate to business dashboard
       router.replace('/(business)');
