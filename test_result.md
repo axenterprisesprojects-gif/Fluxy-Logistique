@@ -116,6 +116,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Driver login with phone number works correctly"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Driver login with phone +241 07 00 00 01 and name 'Test Chauffeur' works perfectly. Creates session token and returns user data correctly."
   
   - task: "Business delivery creation"
     implemented: true
@@ -128,6 +131,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Delivery creation with distance calculation and pricing works"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Business login (newtest@business.com) and delivery creation works perfectly. Created delivery with customer 'Jean Dupont', items '3 fauteuils, 1 armoire', destination 'Akanda, Libreville'. Generated delivery_code QH2F5B3B and calculated price 35000 F correctly."
   
   - task: "Driver job acceptance"
     implemented: true
@@ -140,6 +146,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Job acceptance with first-come-first-serve works"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Complete job flow works - driver can see available jobs, delivery appears in list with correct details, and driver can accept job successfully. Status changes to 'accepted' and driver info is recorded."
   
   - task: "Admin dashboard and driver validation"
     implemented: true
@@ -152,6 +161,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Admin endpoints for dashboard, pricing and validation work"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin login (admin@quickhaul.com) works after fixing missing cookie setting. Dashboard shows correct stats (7 total deliveries, 4 pending, 3 active). Admin can view all deliveries and see accepted delivery with driver details. FIXED: Added missing cookie setting in admin login endpoint."
   
   - task: "Pricing rules management"
     implemented: true
@@ -164,6 +176,9 @@ backend:
       - working: true
         agent: "main"
         comment: "CRUD for pricing rules and commission works"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Pricing calculation works correctly - 5-10km distance calculated 35000 F price automatically during delivery creation."
 
 frontend:
   - task: "Landing page with role selection"
