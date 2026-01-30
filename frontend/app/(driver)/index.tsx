@@ -278,27 +278,61 @@ export default function DriverHome() {
         </View>
       )}
 
-      {/* Active delivery alert - Can't accept new ones */}
+      {/* CURRENT DELIVERY SECTION - Prominent button */}
       {hasActiveDelivery && currentActiveJob && (
-        <TouchableOpacity 
-          style={styles.activeDeliveryCard}
-          onPress={() => router.push('/(driver)/jobs')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.activeDeliveryIcon}>
-            <Ionicons name="car" size={24} color={COLORS.white} />
+        <View style={styles.currentDeliverySection}>
+          <View style={styles.currentDeliveryHeader}>
+            <View style={styles.currentDeliveryPulse}>
+              <View style={styles.currentDeliveryPulseInner} />
+            </View>
+            <Text style={styles.currentDeliverySectionTitle}>LIVRAISON EN COURS</Text>
           </View>
-          <View style={styles.activeDeliveryContent}>
-            <Text style={styles.activeDeliveryTitle}>Livraison en cours</Text>
-            <Text style={styles.activeDeliveryText}>
-              {currentActiveJob.status === 'accepted' ? 'En route vers récupération' : 'En cours de livraison'}
-            </Text>
-            <Text style={styles.activeDeliveryDestination}>
-              → {currentActiveJob.destination_area}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.white} />
-        </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.currentDeliveryCard}
+            onPress={() => setShowCurrentDeliveryModal(true)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.currentDeliveryTop}>
+              <View style={styles.currentDeliveryStatus}>
+                <Ionicons 
+                  name={currentActiveJob.status === 'accepted' ? 'navigate' : 'bicycle'} 
+                  size={20} 
+                  color={COLORS.white} 
+                />
+                <Text style={styles.currentDeliveryStatusText}>
+                  {currentActiveJob.status === 'accepted' ? 'En route vers récupération' : 'En cours de livraison'}
+                </Text>
+              </View>
+              <View style={styles.currentDeliveryEarnings}>
+                <Text style={styles.currentDeliveryEarningsValue}>
+                  {currentActiveJob.driver_earnings?.toLocaleString()} F
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.currentDeliveryRoute}>
+              <View style={styles.currentDeliveryRouteItem}>
+                <View style={[styles.currentDeliveryDot, { backgroundColor: COLORS.white }]} />
+                <Text style={styles.currentDeliveryRouteText} numberOfLines={1}>
+                  {currentActiveJob.pickup_address || 'Pickup'}
+                </Text>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.6)" />
+              <View style={styles.currentDeliveryRouteItem}>
+                <View style={[styles.currentDeliveryDot, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.currentDeliveryRouteText} numberOfLines={1}>
+                  {currentActiveJob.destination_area}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.currentDeliveryAction}>
+              <Text style={styles.currentDeliveryActionText}>Gérer la livraison</Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
+            </View>
+          </TouchableOpacity>
+        </View>
       )}
 
       {needsProfileSetup && (
