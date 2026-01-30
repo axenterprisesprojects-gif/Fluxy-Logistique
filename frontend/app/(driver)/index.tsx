@@ -187,11 +187,20 @@ export default function DriverHome() {
         {/* Swipe to accept for available jobs */}
         {isAvailable && (
           <View style={styles.swipeContainer}>
-            <SwipeToAccept
-              onAccept={() => handleAcceptJob(item.delivery_id)}
-              disabled={!isValidated}
-              loading={acceptingId === item.delivery_id}
-            />
+            {hasActiveDelivery ? (
+              <View style={styles.disabledSwipeMessage}>
+                <Ionicons name="lock-closed" size={16} color={COLORS.gray[400]} />
+                <Text style={styles.disabledSwipeText}>
+                  Terminez votre livraison en cours pour accepter
+                </Text>
+              </View>
+            ) : (
+              <SwipeToAccept
+                onAccept={() => handleAcceptJob(item.delivery_id)}
+                disabled={!isValidated}
+                loading={acceptingId === item.delivery_id}
+              />
+            )}
           </View>
         )}
       </Card>
