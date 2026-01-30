@@ -80,7 +80,12 @@ class BusinessRegister(BaseModel):
 
 class DriverLogin(BaseModel):
     phone: str
-    name: Optional[str] = None
+    password: str
+
+class DriverRegisterRequest(BaseModel):
+    phone: str
+    password: str
+    name: str
 
 class DriverProfile(BaseModel):
     name: str
