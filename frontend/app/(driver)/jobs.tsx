@@ -290,31 +290,45 @@ export default function CurrentDelivery() {
               )}
 
               {isPickupConfirmed && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionButtonDelivery]}
-                  onPress={() => handleQuickConfirm('delivery')}
-                  disabled={processing}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="flag" size={24} color={COLORS.white} />
-                  <Text style={styles.actionButtonText}>
-                    {processing ? 'Confirmation...' : 'Commande livrée'}
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionButtonDelivery]}
+                    onPress={() => {
+                      setPhotoType('delivery');
+                      setPhotoModalVisible(true);
+                    }}
+                    disabled={processing}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="flag" size={24} color={COLORS.white} />
+                    <Text style={styles.actionButtonText}>
+                      {processing ? 'Confirmation...' : 'Commande livrée'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.skipPhotoLink}
+                    onPress={() => handleQuickConfirm('delivery')}
+                    disabled={processing}
+                  >
+                    <Text style={styles.skipPhotoText}>Confirmer sans photo</Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
 
-            {/* Photo option (optional) */}
-            <TouchableOpacity 
-              style={styles.photoLink}
-              onPress={() => {
-                setPhotoType(isAccepted ? 'pickup' : 'delivery');
-                setPhotoModalVisible(true);
-              }}
-            >
-              <Ionicons name="camera" size={16} color={COLORS.gray[500]} />
-              <Text style={styles.photoLinkText}>Ajouter une photo (optionnel)</Text>
-            </TouchableOpacity>
+            {/* Photo option for pickup */}
+            {isAccepted && (
+              <TouchableOpacity 
+                style={styles.photoLink}
+                onPress={() => {
+                  setPhotoType('pickup');
+                  setPhotoModalVisible(true);
+                }}
+              >
+                <Ionicons name="camera" size={16} color={COLORS.gray[500]} />
+                <Text style={styles.photoLinkText}>Ajouter une photo (optionnel)</Text>
+              </TouchableOpacity>
+            )}
           </Card>
         )}
       </ScrollView>
