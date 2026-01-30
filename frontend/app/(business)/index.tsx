@@ -41,6 +41,7 @@ export default function BusinessHome() {
 
   const activeDeliveries = deliveries.filter(d => ['pending', 'accepted', 'pickup_confirmed'].includes(d.status));
   const completedCount = deliveries.filter(d => d.status === 'delivered').length;
+  const pendingCount = deliveries.filter(d => d.status === 'pending').length;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
