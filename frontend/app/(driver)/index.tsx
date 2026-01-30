@@ -226,6 +226,29 @@ export default function DriverHome() {
         </View>
       )}
 
+      {/* Active delivery alert - Can't accept new ones */}
+      {hasActiveDelivery && currentActiveJob && (
+        <TouchableOpacity 
+          style={styles.activeDeliveryCard}
+          onPress={() => router.push('/(driver)/my-jobs')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.activeDeliveryIcon}>
+            <Ionicons name="car" size={24} color={COLORS.white} />
+          </View>
+          <View style={styles.activeDeliveryContent}>
+            <Text style={styles.activeDeliveryTitle}>Livraison en cours</Text>
+            <Text style={styles.activeDeliveryText}>
+              {currentActiveJob.status === 'accepted' ? 'En route vers récupération' : 'En cours de livraison'}
+            </Text>
+            <Text style={styles.activeDeliveryDestination}>
+              → {currentActiveJob.destination_area}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
+
       {needsProfileSetup && (
         <TouchableOpacity
           style={styles.setupCard}
