@@ -189,7 +189,7 @@ export default function LoginBusiness() {
               />
               <Input
                 label="Adresse de récupération"
-                placeholder="Zone industrielle, Abidjan"
+                placeholder="Zone industrielle, Libreville"
                 value={businessAddress}
                 onChangeText={setBusinessAddress}
                 multiline
