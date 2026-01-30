@@ -756,7 +756,7 @@
         }
         
         function loginWithGoogle() {
-            const redirectUrl = window.location.origin + '/admin';
+            const redirectUrl = window.location.origin + '/api/admin';
             localStorage.setItem('pending_admin_auth', 'true');
             window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
         }
