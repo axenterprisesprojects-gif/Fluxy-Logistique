@@ -56,19 +56,19 @@ export default function NewDelivery() {
   const handleCreateDelivery = async () => {
     // Validate all required fields
     if (!customerName.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer le nom du client');
+      showAlert('Erreur', 'Veuillez entrer le nom du client');
       return;
     }
     if (!customerPhone.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer le numéro du client');
+      showAlert('Erreur', 'Veuillez entrer le numéro du client');
       return;
     }
     if (!itemDescription.trim()) {
-      Alert.alert('Erreur', 'Veuillez décrire les articles à livrer');
+      showAlert('Erreur', 'Veuillez décrire les articles à livrer');
       return;
     }
     if (!destinationArea.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer le quartier de livraison');
+      showAlert('Erreur', 'Veuillez entrer le quartier de livraison');
       return;
     }
 
@@ -85,23 +85,12 @@ export default function NewDelivery() {
       console.log('Delivery created:', result);
       
       // Show success and navigate
-      if (Platform.OS === 'web') {
-        window.alert(`Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`);
+      showAlert('Succès', `Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`, () => {
         router.push('/(business)/deliveries');
-      } else {
-        Alert.alert(
-          'Succès', 
-          `Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`, 
-          [{ text: 'OK', onPress: () => router.push('/(business)/deliveries') }]
-        );
-      }
+      });
     } catch (error: any) {
       console.error('Error creating delivery:', error);
-      if (Platform.OS === 'web') {
-        window.alert(error.message || 'Impossible de créer la livraison');
-      } else {
-        Alert.alert('Erreur', error.message || 'Impossible de créer la livraison');
-      }
+      showAlert('Erreur', error.message || 'Impossible de créer la livraison');
     } finally {
       setLoading(false);
     }
