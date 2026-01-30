@@ -41,35 +41,58 @@ export default function AvailableJobs() {
 
   const handleAcceptJob = async (deliveryId: string) => {
     if (!user?.is_validated) {
-      Alert.alert(
-        'Profil non validé',
-        'Votre profil doit être validé par un administrateur avant de pouvoir accepter des missions.'
-      );
+      if (Platform.OS === 'web') {
+        window.alert('Votre profil doit être validé par un administrateur avant de pouvoir accepter des missions.');
+      } else {
+        Alert.alert(
+          'Profil non validé',
+          'Votre profil doit être validé par un administrateur avant de pouvoir accepter des missions.'
+        );
+      }
       return;
     }
 
-    Alert.alert(
-      'Accepter la mission',
-      'Êtes-vous sûr de vouloir accepter cette mission ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Accepter',
-          onPress: async () => {
-            try {
-              setAcceptingId(deliveryId);
-              await acceptJob(deliveryId);
-              Alert.alert('Succès', 'Mission acceptée !');
-              await loadJobs();
-            } catch (error: any) {
-              Alert.alert('Erreur', error.message || 'Impossible d\'accepter la mission');
-            } finally {
-              setAcceptingId(null);
-            }
+    const confirmAccept = Platform.OS === 'web'
+      ? window.confirm('Êtes-vous sûr de vouloir accepter cette mission ?')
+      : true;  // On mobile, we use Alert.alert below
+
+    if (Platform.OS === 'web') {
+      if (confirmAccept) {
+        try {
+          setAcceptingId(deliveryId);
+          await acceptJob(deliveryId);
+          window.alert('Mission acceptée !');
+          await loadJobs();
+        } catch (error: any) {
+          window.alert(error.message || 'Impossible d\'accepter la mission');
+        } finally {
+          setAcceptingId(null);
+        }
+      }
+    } else {
+      Alert.alert(
+        'Accepter la mission',
+        'Êtes-vous sûr de vouloir accepter cette mission ?',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Accepter',
+            onPress: async () => {
+              try {
+                setAcceptingId(deliveryId);
+                await acceptJob(deliveryId);
+                Alert.alert('Succès', 'Mission acceptée !');
+                await loadJobs();
+              } catch (error: any) {
+                Alert.alert('Erreur', error.message || 'Impossible d\'accepter la mission');
+              } finally {
+                setAcceptingId(null);
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const renderJobItem = ({ item }: { item: any }) => (
