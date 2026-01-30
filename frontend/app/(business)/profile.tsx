@@ -50,7 +50,11 @@ export default function BusinessProfile() {
       'Êtes-vous sûr de vouloir vous déconnecter ?',
       async () => {
         await logout();
-        router.replace('/');
+        if (Platform.OS === 'web') {
+          window.location.href = '/';
+        } else {
+          router.replace('/');
+        }
       },
       undefined,
       'Déconnexion',
