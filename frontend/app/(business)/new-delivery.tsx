@@ -209,7 +209,7 @@ export default function NewDelivery() {
           />
           <Input
             label="Quartier de livraison"
-            placeholder="Ex: Cocody Angré, Abidjan"
+            placeholder="Ex: Akanda, Libreville"
             value={destinationArea}
             onChangeText={setDestinationArea}
           />
