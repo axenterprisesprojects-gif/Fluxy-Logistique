@@ -236,6 +236,26 @@ const styles = StyleSheet.create({
   deliveryInfo: {
     flex: 1,
   },
+  codeContainer: {
+    backgroundColor: COLORS.primary + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  deliveryCode: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    marginBottom: 4,
+  },
   deliveryType: {
     fontSize: 18,
     fontWeight: '600',
