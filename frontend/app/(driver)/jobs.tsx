@@ -76,16 +76,26 @@ export default function AvailableJobs() {
     <Card style={styles.jobCard}>
       <View style={styles.jobHeader}>
         <View style={styles.jobInfo}>
-          <Text style={styles.jobType}>{item.item_type}</Text>
+          <View style={styles.codeBadge}>
+            <Text style={styles.codeText}>{item.delivery_code || item.delivery_id}</Text>
+          </View>
+          {item.customer_name && (
+            <Text style={styles.customerName}>{item.customer_name}</Text>
+          )}
           <View style={styles.locationRow}>
             <Ionicons name="location" size={14} color={COLORS.gray[400]} />
             <Text style={styles.jobDestination}>{item.destination_area}</Text>
           </View>
         </View>
-        <View style={styles.timeBadge}>
-          <Text style={styles.timeText}>{item.time_slot}</Text>
-        </View>
       </View>
+
+      {/* Items description */}
+      {item.item_description && (
+        <View style={styles.itemsBox}>
+          <Text style={styles.itemsLabel}>Articles à livrer:</Text>
+          <Text style={styles.itemsText}>{item.item_description}</Text>
+        </View>
+      )}
 
       <View style={styles.jobDetails}>
         <View style={styles.detailItem}>
@@ -96,6 +106,12 @@ export default function AvailableJobs() {
           <Ionicons name="business" size={16} color={COLORS.gray[400]} />
           <Text style={styles.detailText}>{item.business_name}</Text>
         </View>
+        {item.customer_phone && (
+          <View style={styles.detailItem}>
+            <Ionicons name="call" size={16} color={COLORS.gray[400]} />
+            <Text style={styles.detailText}>{item.customer_phone}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.priceContainer}>
