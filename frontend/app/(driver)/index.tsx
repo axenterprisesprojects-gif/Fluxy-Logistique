@@ -1,22 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
 import Card from '../../src/components/Card';
+import Button from '../../src/components/Button';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
+
+const FILTERS = [
+  { id: 'all', label: 'Toutes' },
+  { id: 'available', label: 'Disponibles' },
+  { id: 'mine', label: 'Mes courses' },
+];
 
 export default function DriverHome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { getAvailableJobs, getDriverJobs } = useApi();
+  const { getAvailableJobs, getDriverJobs, acceptJob } = useApi();
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState('available');
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -24,8 +33,13 @@ export default function DriverHome() {
         getAvailableJobs(),
         getDriverJobs()
       ]);
-      setAvailableJobs(available);
-      setMyJobs(mine);
+      // Sort by creation date (most recent first)
+      setAvailableJobs(available.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+      setMyJobs(mine.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -43,6 +57,42 @@ export default function DriverHome() {
     setRefreshing(false);
   }, []);
 
+  const handleAcceptJob = async (deliveryId: string) => {
+    if (!user?.is_validated) {
+      if (Platform.OS === 'web') {
+        window.alert('Votre profil doit être validé par un administrateur avant de pouvoir accepter des missions.');
+      }
+      return;
+    }
+
+    try {
+      setAcceptingId(deliveryId);
+      await acceptJob(deliveryId);
+      if (Platform.OS === 'web') {
+        window.alert('Mission acceptée !');
+      }
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible d\'accepter la mission'));
+      }
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  // Filter jobs based on selected filter
+  const getFilteredJobs = () => {
+    if (selectedFilter === 'available') {
+      return availableJobs;
+    } else if (selectedFilter === 'mine') {
+      return myJobs;
+    }
+    // 'all' - combine both, available first
+    return [...availableJobs, ...myJobs];
+  };
+
+  const filteredJobs = getFilteredJobs();
   const activeJobs = myJobs.filter(j => ['accepted', 'pickup_confirmed'].includes(j.status));
   const completedJobs = myJobs.filter(j => j.status === 'delivered');
   const totalEarnings = completedJobs.reduce((sum, job) => sum + job.driver_earnings, 0);
@@ -50,8 +100,69 @@ export default function DriverHome() {
   const needsProfileSetup = !user?.vehicle_type || !user?.vehicle_plate;
   const isValidated = user?.is_validated;
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const renderMissionItem = ({ item }: { item: any }) => {
+    const isMyJob = myJobs.some(j => j.delivery_id === item.delivery_id);
+    const isAvailable = availableJobs.some(j => j.delivery_id === item.delivery_id);
+    
+    return (
+      <Card style={styles.missionCard}>
+        <View style={styles.missionHeader}>
+          <View style={styles.missionInfo}>
+            {/* Business Name */}
+            <View style={styles.businessRow}>
+              <Ionicons name="business" size={16} color={COLORS.primary} />
+              <Text style={styles.businessName}>{item.business_name}</Text>
+            </View>
+            
+            {/* Destination */}
+            <View style={styles.destinationRow}>
+              <Ionicons name="location" size={16} color={COLORS.secondary} />
+              <Text style={styles.destinationText}>{item.destination_area}</Text>
+            </View>
+          </View>
+          
+          {/* Price */}
+          <View style={styles.priceBadge}>
+            <Text style={styles.priceValue}>{item.total_price?.toLocaleString()} F</Text>
+          </View>
+        </View>
+
+        {/* Status for my jobs */}
+        {isMyJob && (
+          <View style={styles.statusRow}>
+            <View style={[styles.statusBadge, 
+              item.status === 'delivered' && styles.statusDelivered,
+              item.status === 'accepted' && styles.statusAccepted,
+              item.status === 'pickup_confirmed' && styles.statusPickup
+            ]}>
+              <Text style={styles.statusText}>
+                {item.status === 'accepted' && 'En route vers récupération'}
+                {item.status === 'pickup_confirmed' && 'En cours de livraison'}
+                {item.status === 'delivered' && 'Livrée'}
+              </Text>
+            </View>
+            <Text style={styles.earningsText}>Gain: {item.driver_earnings?.toLocaleString()} F</Text>
+          </View>
+        )}
+
+        {/* Accept button for available jobs */}
+        {isAvailable && (
+          <Button
+            title={isValidated ? "Accepter" : "Profil non validé"}
+            onPress={() => handleAcceptJob(item.delivery_id)}
+            loading={acceptingId === item.delivery_id}
+            disabled={!isValidated}
+            variant={isValidated ? 'secondary' : 'outline'}
+            size="small"
+            style={styles.acceptButton}
+          />
+        )}
+      </Card>
+    );
+  };
+
+  const ListHeader = () => (
+    <>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -63,114 +174,106 @@ export default function DriverHome() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
+      {/* Alerts */}
+      {!isValidated && (
+        <View style={styles.alertCard}>
+          <Ionicons name="warning" size={24} color={COLORS.warning} />
+          <View style={styles.alertContent}>
+            <Text style={styles.alertTitle}>Profil en attente de validation</Text>
+            <Text style={styles.alertText}>
+              {needsProfileSetup
+                ? "Complétez votre profil pour être validé"
+                : "Votre profil est en cours d'examen par l'admin"}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {needsProfileSetup && (
+        <TouchableOpacity
+          style={styles.setupCard}
+          onPress={() => router.push('/(driver)/profile')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.setupIcon}>
+            <Ionicons name="person-add" size={28} color={COLORS.white} />
+          </View>
+          <View style={styles.setupContent}>
+            <Text style={styles.setupTitle}>Compléter le profil</Text>
+            <Text style={styles.setupText}>Ajoutez vos informations véhicule</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
+        </TouchableOpacity>
+      )}
+
+      {/* Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{availableJobs.length}</Text>
+          <Text style={styles.statLabel}>Disponibles</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{activeJobs.length}</Text>
+          <Text style={styles.statLabel}>En cours</Text>
+        </View>
+        <View style={[styles.statCard, styles.earningsCard]}>
+          <Text style={[styles.statNumber, styles.earningsNumber]}>
+            {totalEarnings.toLocaleString()}
+          </Text>
+          <Text style={styles.statLabel}>Gains (F)</Text>
+        </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.filterContainer}>
+        {FILTERS.map(filter => (
+          <TouchableOpacity
+            key={filter.id}
+            style={[styles.filterTab, selectedFilter === filter.id && styles.filterTabActive]}
+            onPress={() => setSelectedFilter(filter.id)}
+          >
+            <Text style={[styles.filterText, selectedFilter === filter.id && styles.filterTextActive]}>
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Section Title */}
+      <Text style={styles.sectionTitle}>
+        {selectedFilter === 'available' && `${availableJobs.length} mission(s) disponible(s)`}
+        {selectedFilter === 'mine' && `${myJobs.length} course(s)`}
+        {selectedFilter === 'all' && `${filteredJobs.length} mission(s)`}
+      </Text>
+    </>
+  );
+
+  const ListEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="cube-outline" size={48} color={COLORS.gray[300]} />
+      <Text style={styles.emptyText}>
+        {selectedFilter === 'available' && 'Aucune mission disponible'}
+        {selectedFilter === 'mine' && 'Aucune course en cours'}
+        {selectedFilter === 'all' && 'Aucune mission'}
+      </Text>
+      <Text style={styles.emptySubtext}>Tirez vers le bas pour actualiser</Text>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <FlatList
+        data={filteredJobs}
+        renderItem={renderMissionItem}
+        keyExtractor={(item) => item.delivery_id}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={ListEmpty}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
-      >
-        {/* Alerts */}
-        {!isValidated && (
-          <View style={styles.alertCard}>
-            <Ionicons name="warning" size={24} color={COLORS.warning} />
-            <View style={styles.alertContent}>
-              <Text style={styles.alertTitle}>Profil en attente de validation</Text>
-              <Text style={styles.alertText}>
-                {needsProfileSetup
-                  ? "Complétez votre profil pour être validé"
-                  : "Votre profil est en cours d'examen par l'admin"}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {needsProfileSetup && (
-          <TouchableOpacity
-            style={styles.setupCard}
-            onPress={() => router.push('/(driver)/profile')}
-            activeOpacity={0.8}
-          >
-            <View style={styles.setupIcon}>
-              <Ionicons name="person-add" size={28} color={COLORS.white} />
-            </View>
-            <View style={styles.setupContent}>
-              <Text style={styles.setupTitle}>Compléter le profil</Text>
-              <Text style={styles.setupText}>Ajoutez vos informations véhicule</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
-          </TouchableOpacity>
-        )}
-
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{availableJobs.length}</Text>
-            <Text style={styles.statLabel}>Disponibles</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{activeJobs.length}</Text>
-            <Text style={styles.statLabel}>En cours</Text>
-          </View>
-          <View style={[styles.statCard, styles.earningsCard]}>
-            <Text style={[styles.statNumber, styles.earningsNumber]}>
-              {totalEarnings.toLocaleString()}
-            </Text>
-            <Text style={styles.statLabel}>Gains (F)</Text>
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(driver)/jobs')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.quickActionIcon}>
-            <Ionicons name="flash" size={28} color={COLORS.white} />
-          </View>
-          <View style={styles.quickActionText}>
-            <Text style={styles.quickActionTitle}>Voir les missions</Text>
-            <Text style={styles.quickActionSubtitle}>
-              {availableJobs.length} mission(s) disponible(s)
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
-        </TouchableOpacity>
-
-        {/* Active Jobs Preview */}
-        {activeJobs.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Courses en cours</Text>
-              <TouchableOpacity onPress={() => router.push('/(driver)/my-jobs')}>
-                <Text style={styles.seeAll}>Voir tout</Text>
-              </TouchableOpacity>
-            </View>
-
-            {activeJobs.slice(0, 2).map((job) => (
-              <Card key={job.delivery_id} style={styles.jobCard}>
-                <View style={styles.jobHeader}>
-                  <View>
-                    <Text style={styles.jobType}>{job.item_type}</Text>
-                    <Text style={styles.jobDestination}>{job.destination_area}</Text>
-                  </View>
-                  <View style={styles.earningsBadge}>
-                    <Text style={styles.earningsValue}>
-                      {job.driver_earnings.toLocaleString()} F
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.jobFooter}>
-                  <Text style={styles.jobStatus}>
-                    {job.status === 'accepted' ? 'En route vers récupération' : 'En cours de livraison'}
-                  </Text>
-                </View>
-              </Card>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+      />
     </View>
   );
 }
@@ -180,11 +283,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingVertical: 16,
   },
   greeting: {
@@ -203,10 +309,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
   },
   alertCard: {
     flexDirection: 'row',
@@ -289,93 +391,129 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     marginTop: 4,
   },
-  quickAction: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
+  filterContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    ...SHADOWS.medium,
-  },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
+    backgroundColor: COLORS.gray[100],
     borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    padding: 4,
+    marginBottom: 16,
   },
-  quickActionText: {
+  filterTab: {
     flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
   },
-  quickActionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[900],
+  filterTabActive: {
+    backgroundColor: COLORS.white,
   },
-  quickActionSubtitle: {
-    fontSize: 13,
+  filterText: {
+    fontSize: 14,
+    fontWeight: '500',
     color: COLORS.gray[500],
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  filterTextActive: {
+    color: COLORS.secondary,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: COLORS.gray[900],
-  },
-  seeAll: {
-    fontSize: 14,
-    color: COLORS.secondary,
-    fontWeight: '600',
-  },
-  jobCard: {
+    color: COLORS.gray[700],
     marginBottom: 12,
   },
-  jobHeader: {
+  missionCard: {
+    marginBottom: 12,
+    padding: 16,
+  },
+  missionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
   },
-  jobType: {
+  missionInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  businessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  businessName: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.gray[900],
   },
-  jobDestination: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-    marginTop: 2,
+  destinationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  earningsBadge: {
-    backgroundColor: '#ECFDF5',
+  destinationText: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+  },
+  priceBadge: {
+    backgroundColor: COLORS.primary + '15',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
-  earningsValue: {
-    fontSize: 14,
+  priceValue: {
+    fontSize: 16,
     fontWeight: '700',
-    color: COLORS.secondary,
+    color: COLORS.primary,
   },
-  jobFooter: {
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.gray[100],
-    paddingTop: 12,
   },
-  jobStatus: {
-    fontSize: 13,
-    color: COLORS.primary,
+  statusBadge: {
+    backgroundColor: COLORS.info + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusAccepted: {
+    backgroundColor: COLORS.info + '15',
+  },
+  statusPickup: {
+    backgroundColor: COLORS.warning + '15',
+  },
+  statusDelivered: {
+    backgroundColor: COLORS.secondary + '15',
+  },
+  statusText: {
+    fontSize: 12,
     fontWeight: '500',
+    color: COLORS.gray[700],
+  },
+  earningsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  acceptButton: {
+    marginTop: 12,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.gray[500],
+    marginTop: 12,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray[400],
+    marginTop: 4,
   },
 });
