@@ -108,6 +108,18 @@ export default function DriverHome() {
     const isMyJob = myJobs.some(j => j.delivery_id === item.delivery_id);
     const isAvailable = availableJobs.some(j => j.delivery_id === item.delivery_id);
     
+    // Calculate commission and net earnings
+    const commission = item.commission || Math.round(item.total_price * 0.15);
+    const netEarnings = item.driver_earnings || (item.total_price - commission);
+    
+    // Time slot labels
+    const timeSlotLabels: Record<string, string> = {
+      'asap': 'Dès que possible',
+      '1-2h': '1 à 2 heures',
+      '2-4h': '2 à 4 heures',
+      '4-8h': '4 à 8 heures',
+    };
+    
     return (
       <Card style={styles.missionCard}>
         {/* Header: Business Name + Price */}
@@ -120,6 +132,16 @@ export default function DriverHome() {
             <Text style={styles.priceValue}>{item.total_price?.toLocaleString()} F</Text>
           </View>
         </View>
+
+        {/* Time slot */}
+        {item.time_slot && (
+          <View style={styles.timeSlotRow}>
+            <Ionicons name="time" size={14} color={COLORS.warning} />
+            <Text style={styles.timeSlotText}>
+              {timeSlotLabels[item.time_slot] || item.time_slot}
+            </Text>
+          </View>
+        )}
 
         {/* Items to transport */}
         {(item.item_description || item.item_type) && (
@@ -160,11 +182,32 @@ export default function DriverHome() {
           </View>
         </View>
 
-        {/* Distance */}
-        <View style={styles.distanceRow}>
-          <Ionicons name="navigate" size={14} color={COLORS.gray[400]} />
-          <Text style={styles.distanceText}>{item.distance_km} km</Text>
+        {/* Distance + Earnings breakdown */}
+        <View style={styles.detailsRow}>
+          <View style={styles.distanceBox}>
+            <Ionicons name="navigate" size={14} color={COLORS.gray[400]} />
+            <Text style={styles.distanceText}>{item.distance_km} km</Text>
+          </View>
         </View>
+
+        {/* Financial breakdown for available jobs */}
+        {isAvailable && (
+          <View style={styles.earningsBreakdown}>
+            <View style={styles.earningsLine}>
+              <Text style={styles.earningsLineLabel}>Prix total</Text>
+              <Text style={styles.earningsLineValue}>{item.total_price?.toLocaleString()} F</Text>
+            </View>
+            <View style={styles.earningsLine}>
+              <Text style={styles.earningsLineLabel}>Commission plateforme (15%)</Text>
+              <Text style={styles.earningsLineValueNegative}>-{commission?.toLocaleString()} F</Text>
+            </View>
+            <View style={styles.earningsDivider} />
+            <View style={styles.earningsLine}>
+              <Text style={styles.earningsNetLabel}>Net à percevoir</Text>
+              <Text style={styles.earningsNetValue}>{netEarnings?.toLocaleString()} F</Text>
+            </View>
+          </View>
+        )}
 
         {/* Status for my jobs */}
         {isMyJob && (
