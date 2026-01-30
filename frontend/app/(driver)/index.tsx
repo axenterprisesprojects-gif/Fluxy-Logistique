@@ -282,7 +282,7 @@ export default function DriverHome() {
       {hasActiveDelivery && currentActiveJob && (
         <TouchableOpacity 
           style={styles.activeDeliveryCard}
-          onPress={() => router.push('/(driver)/my-jobs')}
+          onPress={() => router.push('/(driver)/jobs')}
           activeOpacity={0.8}
         >
           <View style={styles.activeDeliveryIcon}>
