@@ -82,16 +82,16 @@ export default function BusinessHome() {
         {/* Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{pendingCount}</Text>
+            <Text style={styles.statLabel}>Requêtes</Text>
+          </View>
+          <View style={styles.statCard}>
             <Text style={styles.statNumber}>{activeDeliveries.length}</Text>
             <Text style={styles.statLabel}>En cours</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{completedCount}</Text>
             <Text style={styles.statLabel}>Livrées</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{deliveries.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
           </View>
         </View>
 
