@@ -490,6 +490,12 @@ const styles = StyleSheet.create({
   earningsCard: {
     backgroundColor: '#ECFDF5',
   },
+  deliveredCard: {
+    backgroundColor: '#EDE9FE',
+  },
+  deliveredNumber: {
+    color: '#7C3AED',
+  },
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
