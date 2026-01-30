@@ -1,370 +1,412 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { useApi } from '../../src/hooks/useApi';
-import { showAlert } from '../../src/utils/alert';
 import Card from '../../src/components/Card';
-import Button from '../../src/components/Button';
 import LoadingScreen from '../../src/components/LoadingScreen';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
 
-export default function CurrentDelivery() {
+type FilterType = 'all' | 'delivered' | 'cancelled';
+
+export default function DeliveryHistory() {
   const insets = useSafeAreaInsets();
-  const { getDriverJobs, confirmPickup, confirmDelivery } = useApi();
-  const [currentJob, setCurrentJob] = useState<any>(null);
+  const { getDriverJobs } = useApi();
+  const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [photoModalVisible, setPhotoModalVisible] = useState(false);
-  const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
-  const loadCurrentJob = async () => {
+  const loadJobs = async () => {
     try {
-      const jobs = await getDriverJobs();
-      // Find active job (accepted or pickup_confirmed)
-      const active = jobs.find((j: any) => ['accepted', 'pickup_confirmed'].includes(j.status));
-      setCurrentJob(active || null);
+      const data = await getDriverJobs();
+      setJobs(data);
     } catch (error) {
-      console.error('Error loading current job:', error);
+      console.error('Error loading jobs:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadCurrentJob();
+    loadJobs();
   }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadCurrentJob();
+    await loadJobs();
     setRefreshing(false);
   }, []);
 
-  const handleTakePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        showAlert('Permission requise', 'Veuillez autoriser l\'accès à la caméra');
-        return;
-      }
+  // Filter jobs - only completed ones (delivered or cancelled)
+  const completedJobs = jobs.filter(j => ['delivered', 'cancelled'].includes(j.status));
+  
+  const filteredJobs = completedJobs.filter(job => {
+    if (filter === 'all') return true;
+    return job.status === filter;
+  }).sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime());
 
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.5,
-        base64: true,
-      });
+  // Stats
+  const deliveredCount = completedJobs.filter(j => j.status === 'delivered').length;
+  const cancelledCount = completedJobs.filter(j => j.status === 'cancelled').length;
+  const totalEarnings = completedJobs.filter(j => j.status === 'delivered').reduce((sum, j) => sum + (j.driver_earnings || 0), 0);
 
-      if (!result.canceled && result.assets[0].base64) {
-        await submitPhoto(result.assets[0].base64);
-      }
-    } catch (error) {
-      console.error('Error taking photo:', error);
-      showAlert('Erreur', 'Impossible de prendre la photo');
-    }
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
-  const handlePickPhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        showAlert('Permission requise', 'Veuillez autoriser l\'accès à la galerie');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.5,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0].base64) {
-        await submitPhoto(result.assets[0].base64);
-      }
-    } catch (error) {
-      console.error('Error picking photo:', error);
-      showAlert('Erreur', 'Impossible de sélectionner la photo');
-    }
+  const formatFullDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
-  const submitPhoto = async (base64: string) => {
-    if (!currentJob) return;
-
-    try {
-      setProcessing(true);
-      setPhotoModalVisible(false);
-
-      const photoData = `data:image/jpeg;base64,${base64}`;
-
-      if (photoType === 'pickup') {
-        await confirmPickup(currentJob.delivery_id, photoData);
-        if (Platform.OS === 'web') {
-          window.alert('Récupération confirmée !');
-        }
-      } else {
-        await confirmDelivery(currentJob.delivery_id, photoData);
-        if (Platform.OS === 'web') {
-          window.alert('Livraison terminée ! Félicitations !');
-        }
-      }
-
-      await loadCurrentJob();
-    } catch (error: any) {
-      showAlert('Erreur', error.message || 'Impossible de confirmer');
-    } finally {
-      setProcessing(false);
-    }
+  const openJobDetail = (job: any) => {
+    setSelectedJob(job);
+    setDetailModalVisible(true);
   };
 
-  // Quick confirm without photo (for web testing)
-  const handleQuickConfirm = async (type: 'pickup' | 'delivery') => {
-    if (!currentJob) return;
+  const renderJobItem = ({ item }: { item: any }) => {
+    const isDelivered = item.status === 'delivered';
+    
+    return (
+      <TouchableOpacity 
+        style={styles.jobCard}
+        onPress={() => openJobDetail(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.jobCardHeader}>
+          <View style={[styles.statusBadge, isDelivered ? styles.statusDelivered : styles.statusCancelled]}>
+            <Ionicons 
+              name={isDelivered ? "checkmark-circle" : "close-circle"} 
+              size={14} 
+              color={COLORS.white} 
+            />
+            <Text style={styles.statusBadgeText}>
+              {isDelivered ? 'Livrée' : 'Annulée'}
+            </Text>
+          </View>
+          <Text style={styles.jobDate}>{formatDate(item.delivered_at || item.created_at)}</Text>
+        </View>
 
-    try {
-      setProcessing(true);
-      const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='; // Minimal placeholder
+        <View style={styles.jobCardBody}>
+          <View style={styles.jobRoute}>
+            <View style={styles.routePoint}>
+              <View style={[styles.routeDot, { backgroundColor: COLORS.primary }]} />
+              <Text style={styles.routeText} numberOfLines={1}>{item.pickup_address || 'Pickup'}</Text>
+            </View>
+            <View style={styles.routeArrow}>
+              <Ionicons name="arrow-forward" size={14} color={COLORS.gray[400]} />
+            </View>
+            <View style={styles.routePoint}>
+              <View style={[styles.routeDot, { backgroundColor: COLORS.secondary }]} />
+              <Text style={styles.routeText} numberOfLines={1}>{item.destination_area}</Text>
+            </View>
+          </View>
 
-      if (type === 'pickup') {
-        await confirmPickup(currentJob.delivery_id, dummyPhoto);
-        if (Platform.OS === 'web') {
-          window.alert('Commande récupérée !');
-        }
-      } else {
-        await confirmDelivery(currentJob.delivery_id, dummyPhoto);
-        if (Platform.OS === 'web') {
-          window.alert('Commande livrée ! Félicitations !');
-        }
-      }
+          <View style={styles.jobDetails}>
+            <View style={styles.detailItem}>
+              <Ionicons name="business" size={14} color={COLORS.gray[400]} />
+              <Text style={styles.detailText}>{item.business_name}</Text>
+            </View>
+            {(item.item_description || item.item_type) && (
+              <View style={styles.detailItem}>
+                <Ionicons name="cube" size={14} color={COLORS.gray[400]} />
+                <Text style={styles.detailText} numberOfLines={1}>
+                  {item.item_description || item.item_type}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-      await loadCurrentJob();
-    } catch (error: any) {
-      if (Platform.OS === 'web') {
-        window.alert('Erreur: ' + (error.message || 'Impossible de confirmer'));
-      }
-    } finally {
-      setProcessing(false);
-    }
+        <View style={styles.jobCardFooter}>
+          {isDelivered && (
+            <Text style={styles.earningsText}>+{item.driver_earnings?.toLocaleString()} F</Text>
+          )}
+          <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   if (loading) {
     return <LoadingScreen message="Chargement..." />;
   }
 
-  const isAccepted = currentJob?.status === 'accepted';
-  const isPickupConfirmed = currentJob?.status === 'pickup_confirmed';
+  const ListHeader = () => (
+    <>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Historique</Text>
+        <Text style={styles.subtitle}>Vos livraisons passées</Text>
+      </View>
+
+      {/* Stats Cards */}
+      <View style={styles.statsContainer}>
+        <Card style={styles.statCard}>
+          <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
+          <Text style={styles.statValue}>{deliveredCount}</Text>
+          <Text style={styles.statLabel}>Livrées</Text>
+        </Card>
+        <Card style={styles.statCard}>
+          <Ionicons name="close-circle" size={24} color={COLORS.error} />
+          <Text style={styles.statValue}>{cancelledCount}</Text>
+          <Text style={styles.statLabel}>Annulées</Text>
+        </Card>
+        <Card style={[styles.statCard, styles.statCardEarnings]}>
+          <Ionicons name="cash" size={24} color={COLORS.white} />
+          <Text style={[styles.statValue, styles.statValueWhite]}>{totalEarnings.toLocaleString()}</Text>
+          <Text style={[styles.statLabel, styles.statLabelWhite]}>Gains (F)</Text>
+        </Card>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+          onPress={() => setFilter('all')}
+        >
+          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
+            Toutes ({completedJobs.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'delivered' && styles.filterTabActive]}
+          onPress={() => setFilter('delivered')}
+        >
+          <Text style={[styles.filterText, filter === 'delivered' && styles.filterTextActive]}>
+            Livrées ({deliveredCount})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'cancelled' && styles.filterTabActive]}
+          onPress={() => setFilter('cancelled')}
+        >
+          <Text style={[styles.filterText, filter === 'cancelled' && styles.filterTextActive]}>
+            Annulées ({cancelledCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={filteredJobs}
+        renderItem={renderJobItem}
+        keyExtractor={(item) => item.delivery_id}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Livraison en cours</Text>
-        </View>
-
-        {!currentJob ? (
-          /* No active delivery */
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="checkmark-circle" size={64} color={COLORS.secondary} />
-            </View>
-            <Text style={styles.emptyTitle}>Aucune livraison en cours</Text>
-            <Text style={styles.emptySubtext}>
-              Acceptez une mission depuis l'accueil pour commencer
+            <Ionicons name="archive-outline" size={56} color={COLORS.gray[300]} />
+            <Text style={styles.emptyTitle}>Aucune livraison</Text>
+            <Text style={styles.emptyText}>
+              {filter === 'all' 
+                ? "Vous n'avez pas encore terminé de livraison"
+                : filter === 'delivered' 
+                  ? "Aucune livraison complétée"
+                  : "Aucune livraison annulée"}
             </Text>
           </View>
-        ) : (
-          /* Active delivery card */
-          <Card style={styles.deliveryCard}>
-            {/* Status indicator */}
-            <View style={[styles.statusBanner, isPickupConfirmed && styles.statusBannerDelivery]}>
-              <Ionicons 
-                name={isAccepted ? "navigate" : "bicycle"} 
-                size={20} 
-                color={COLORS.white} 
-              />
-              <Text style={styles.statusBannerText}>
-                {isAccepted ? 'En route vers récupération' : 'En cours de livraison'}
-              </Text>
-            </View>
+        }
+      />
 
-            {/* Business info */}
-            <View style={styles.section}>
-              <View style={styles.businessRow}>
-                <Ionicons name="business" size={20} color={COLORS.primary} />
-                <Text style={styles.businessName}>{currentJob.business_name}</Text>
-              </View>
-            </View>
-
-            {/* Customer info */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Client</Text>
-              <Text style={styles.customerName}>{currentJob.customer_name || 'Non spécifié'}</Text>
-              {currentJob.customer_phone && (
-                <TouchableOpacity style={styles.phoneRow}>
-                  <Ionicons name="call" size={16} color={COLORS.secondary} />
-                  <Text style={styles.phoneText}>{currentJob.customer_phone}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Items */}
-            {(currentJob.item_description || currentJob.item_type) && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Articles à transporter</Text>
-                <View style={styles.itemsBox}>
-                  <Ionicons name="cube" size={18} color={COLORS.gray[500]} />
-                  <Text style={styles.itemsText}>
-                    {currentJob.item_description || currentJob.item_type}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Route */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Itinéraire</Text>
-              <View style={styles.routeContainer}>
-                {/* Pickup */}
-                <View style={styles.routeItem}>
-                  <View style={[styles.routeDot, styles.routeDotPickup]} />
-                  <View style={styles.routeContent}>
-                    <Text style={styles.routeLabel}>RÉCUPÉRATION</Text>
-                    <Text style={styles.routeAddress}>{currentJob.pickup_address}</Text>
-                  </View>
-                  {isAccepted && (
-                    <View style={styles.currentBadge}>
-                      <Text style={styles.currentBadgeText}>Actuel</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.routeLine} />
-
-                {/* Delivery */}
-                <View style={styles.routeItem}>
-                  <View style={[styles.routeDot, styles.routeDotDelivery]} />
-                  <View style={styles.routeContent}>
-                    <Text style={styles.routeLabel}>LIVRAISON</Text>
-                    <Text style={styles.routeAddress}>{currentJob.destination_area}</Text>
-                  </View>
-                  {isPickupConfirmed && (
-                    <View style={styles.currentBadge}>
-                      <Text style={styles.currentBadgeText}>Actuel</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </View>
-
-            {/* Earnings */}
-            <View style={styles.earningsSection}>
-              <View style={styles.earningsRow}>
-                <Text style={styles.earningsLabel}>Vos gains pour cette course</Text>
-                <Text style={styles.earningsValue}>
-                  {currentJob.driver_earnings?.toLocaleString()} F
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionsSection}>
-              {isAccepted && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionButtonPickup]}
-                  onPress={() => handleQuickConfirm('pickup')}
-                  disabled={processing}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
-                  <Text style={styles.actionButtonText}>
-                    {processing ? 'Confirmation...' : 'Commande récupérée'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {isPickupConfirmed && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionButtonDelivery]}
-                    onPress={() => {
-                      setPhotoType('delivery');
-                      setPhotoModalVisible(true);
-                    }}
-                    disabled={processing}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="flag" size={24} color={COLORS.white} />
-                    <Text style={styles.actionButtonText}>
-                      {processing ? 'Confirmation...' : 'Commande livrée'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.skipPhotoLink}
-                    onPress={() => handleQuickConfirm('delivery')}
-                    disabled={processing}
-                  >
-                    <Text style={styles.skipPhotoText}>Confirmer sans photo</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-
-            {/* Photo option for pickup */}
-            {isAccepted && (
-              <TouchableOpacity 
-                style={styles.photoLink}
-                onPress={() => {
-                  setPhotoType('pickup');
-                  setPhotoModalVisible(true);
-                }}
-              >
-                <Ionicons name="camera" size={16} color={COLORS.gray[500]} />
-                <Text style={styles.photoLinkText}>Ajouter une photo (optionnel)</Text>
-              </TouchableOpacity>
-            )}
-          </Card>
-        )}
-      </ScrollView>
-
-      {/* Photo Modal */}
+      {/* Detail Modal */}
       <Modal
-        visible={photoModalVisible}
+        visible={detailModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setPhotoModalVisible(false)}
+        onRequestClose={() => setDetailModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Photo de {photoType === 'pickup' ? 'récupération' : 'livraison'}
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              Prenez une photo pour confirmer
-            </Text>
+            {selectedJob && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Détails de la livraison</Text>
+                  <TouchableOpacity 
+                    style={styles.modalCloseBtn}
+                    onPress={() => setDetailModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+                  </TouchableOpacity>
+                </View>
 
-            <TouchableOpacity style={styles.photoOption} onPress={handleTakePhoto}>
-              <Ionicons name="camera" size={24} color={COLORS.primary} />
-              <Text style={styles.photoOptionText}>Prendre une photo</Text>
-            </TouchableOpacity>
+                {/* Status Badge */}
+                <View style={[
+                  styles.modalStatusBadge, 
+                  selectedJob.status === 'delivered' ? styles.modalStatusDelivered : styles.modalStatusCancelled
+                ]}>
+                  <Ionicons 
+                    name={selectedJob.status === 'delivered' ? "checkmark-circle" : "close-circle"} 
+                    size={24} 
+                    color={COLORS.white} 
+                  />
+                  <Text style={styles.modalStatusText}>
+                    {selectedJob.status === 'delivered' ? 'Livraison terminée' : 'Livraison annulée'}
+                  </Text>
+                </View>
 
-            <TouchableOpacity style={styles.photoOption} onPress={handlePickPhoto}>
-              <Ionicons name="image" size={24} color={COLORS.primary} />
-              <Text style={styles.photoOptionText}>Choisir depuis la galerie</Text>
-            </TouchableOpacity>
+                {/* Earnings (if delivered) */}
+                {selectedJob.status === 'delivered' && (
+                  <View style={styles.earningsBadge}>
+                    <Text style={styles.earningsBadgeLabel}>Vos gains</Text>
+                    <Text style={styles.earningsBadgeValue}>
+                      +{selectedJob.driver_earnings?.toLocaleString()} F
+                    </Text>
+                  </View>
+                )}
 
-            <Button
-              title="Annuler"
-              variant="outline"
-              onPress={() => setPhotoModalVisible(false)}
-              style={styles.cancelButton}
-            />
+                {/* Business Info */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="business" size={20} color={COLORS.primary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Boutique</Text>
+                      <Text style={styles.detailValue}>{selectedJob.business_name}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Customer Info */}
+                {selectedJob.customer_name && (
+                  <View style={styles.detailSection}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="person" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Client</Text>
+                        <Text style={styles.detailValue}>{selectedJob.customer_name}</Text>
+                        {selectedJob.customer_phone && (
+                          <Text style={styles.detailSubvalue}>{selectedJob.customer_phone}</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Items */}
+                {(selectedJob.item_description || selectedJob.item_type) && (
+                  <View style={styles.detailSection}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="cube" size={20} color={COLORS.gray[500]} />
+                      <View style={styles.detailContent}>
+                        <Text style={styles.detailLabel}>Articles transportés</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedJob.item_description || selectedJob.item_type}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Route */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="location" size={20} color={COLORS.primary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Récupération</Text>
+                      <Text style={styles.detailValue}>{selectedJob.pickup_address}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.detailRow, { marginTop: 12 }]}>
+                    <Ionicons name="flag" size={20} color={COLORS.secondary} />
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Livraison</Text>
+                      <Text style={styles.detailValue}>{selectedJob.destination_area}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Timestamps */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.timestampTitle}>Chronologie</Text>
+                  
+                  <View style={styles.timestampRow}>
+                    <View style={[styles.timestampDot, { backgroundColor: COLORS.gray[400] }]} />
+                    <View style={styles.timestampContent}>
+                      <Text style={styles.timestampLabel}>Commande créée</Text>
+                      <Text style={styles.timestampValue}>{formatFullDate(selectedJob.created_at)}</Text>
+                    </View>
+                  </View>
+
+                  {selectedJob.accepted_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.info }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Acceptée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.accepted_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {selectedJob.pickup_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.primary }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Récupérée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.pickup_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {selectedJob.delivered_at && (
+                    <View style={styles.timestampRow}>
+                      <View style={[styles.timestampDot, { backgroundColor: COLORS.secondary }]} />
+                      <View style={styles.timestampContent}>
+                        <Text style={styles.timestampLabel}>Livrée</Text>
+                        <Text style={styles.timestampValue}>{formatFullDate(selectedJob.delivered_at)}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {/* Financial Breakdown (if delivered) */}
+                {selectedJob.status === 'delivered' && (
+                  <View style={styles.financialSection}>
+                    <Text style={styles.financialTitle}>Détail financier</Text>
+                    <View style={styles.financialRow}>
+                      <Text style={styles.financialLabel}>Prix total</Text>
+                      <Text style={styles.financialValue}>{selectedJob.total_price?.toLocaleString()} F</Text>
+                    </View>
+                    <View style={styles.financialRow}>
+                      <Text style={styles.financialLabel}>Commission plateforme (15%)</Text>
+                      <Text style={styles.financialValueNegative}>-{selectedJob.commission?.toLocaleString()} F</Text>
+                    </View>
+                    <View style={styles.financialDivider} />
+                    <View style={styles.financialRow}>
+                      <Text style={styles.financialLabelBold}>Net perçu</Text>
+                      <Text style={styles.financialValueBold}>{selectedJob.driver_earnings?.toLocaleString()} F</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Close Button */}
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setDetailModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Fermer</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -377,9 +419,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    paddingBottom: 100,
-  },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -389,226 +428,177 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.gray[900],
   },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: 80,
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.gray[700],
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 15,
-    color: COLORS.gray[500],
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  deliveryCard: {
-    marginHorizontal: 20,
-    padding: 0,
-    overflow: 'hidden',
-  },
-  statusBanner: {
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 10,
-  },
-  statusBannerDelivery: {
-    backgroundColor: COLORS.secondary,
-  },
-  statusBannerText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
-  },
-  sectionLabel: {
-    fontSize: 12,
-    color: COLORS.gray[500],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  businessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  businessName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.gray[900],
-  },
-  customerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[800],
-  },
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-    backgroundColor: COLORS.secondary + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  phoneText: {
+  subtitle: {
     fontSize: 14,
-    color: COLORS.secondary,
-    fontWeight: '600',
-  },
-  itemsBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: COLORS.gray[50],
-    padding: 14,
-    borderRadius: 10,
-  },
-  itemsText: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.gray[700],
-    lineHeight: 22,
-  },
-  routeContainer: {
-    backgroundColor: COLORS.gray[50],
-    borderRadius: 12,
-    padding: 16,
-  },
-  routeItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  routeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    color: COLORS.gray[500],
     marginTop: 4,
   },
-  routeDotPickup: {
-    backgroundColor: COLORS.primary,
+  listContent: {
+    paddingBottom: 100,
   },
-  routeDotDelivery: {
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 14,
+  },
+  statCardEarnings: {
     backgroundColor: COLORS.secondary,
   },
-  routeLine: {
-    width: 2,
-    height: 24,
-    backgroundColor: COLORS.gray[300],
-    marginLeft: 6,
-    marginVertical: 4,
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.gray[900],
+    marginTop: 6,
   },
-  routeContent: {
-    flex: 1,
-    marginLeft: 12,
+  statValueWhite: {
+    color: COLORS.white,
   },
-  routeLabel: {
+  statLabel: {
     fontSize: 11,
     color: COLORS.gray[500],
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    marginTop: 2,
   },
-  routeAddress: {
-    fontSize: 15,
-    color: COLORS.gray[800],
-    fontWeight: '500',
+  statLabelWhite: {
+    color: 'rgba(255,255,255,0.8)',
   },
-  currentBadge: {
-    backgroundColor: COLORS.warning,
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    gap: 8,
+  },
+  filterTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: COLORS.gray[100],
+  },
+  filterTabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.gray[600],
+  },
+  filterTextActive: {
+    color: COLORS.white,
+  },
+  jobCard: {
+    backgroundColor: COLORS.white,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
+    ...SHADOWS.small,
+  },
+  jobCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  currentBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+  statusDelivered: {
+    backgroundColor: COLORS.secondary,
+  },
+  statusCancelled: {
+    backgroundColor: COLORS.error,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.white,
   },
-  earningsSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ECFDF5',
+  jobDate: {
+    fontSize: 12,
+    color: COLORS.gray[500],
   },
-  earningsRow: {
+  jobCardBody: {
+    marginBottom: 12,
+  },
+  jobRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  routePoint: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  routeText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.gray[800],
+  },
+  routeArrow: {
+    paddingHorizontal: 8,
+  },
+  jobDetails: {
+    gap: 6,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 13,
+    color: COLORS.gray[600],
+    flex: 1,
+  },
+  jobCardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
+    paddingTop: 12,
   },
-  earningsLabel: {
-    fontSize: 14,
-    color: COLORS.gray[700],
-  },
-  earningsValue: {
-    fontSize: 24,
+  earningsText: {
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.secondary,
   },
-  actionsSection: {
-    padding: 20,
-  },
-  actionButton: {
-    flexDirection: 'row',
+  emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 18,
-    borderRadius: 14,
+    paddingTop: 60,
+    paddingHorizontal: 40,
   },
-  actionButtonPickup: {
-    backgroundColor: COLORS.primary,
-  },
-  actionButtonDelivery: {
-    backgroundColor: COLORS.secondary,
-  },
-  actionButtonText: {
+  emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.white,
+    fontWeight: '600',
+    color: COLORS.gray[600],
+    marginTop: 16,
   },
-  skipPhotoLink: {
-    alignItems: 'center',
-    paddingTop: 16,
-  },
-  skipPhotoText: {
+  emptyText: {
     fontSize: 14,
     color: COLORS.gray[500],
-    textDecorationLine: 'underline',
+    textAlign: 'center',
+    marginTop: 8,
   },
-  photoLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingBottom: 20,
-  },
-  photoLinkText: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-  },
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -618,36 +608,176 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
+    maxHeight: '90%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.gray[900],
-    textAlign: 'center',
   },
-  modalSubtitle: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 24,
+  modalCloseBtn: {
+    padding: 4,
   },
-  photoOption: {
+  modalStatusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  modalStatusDelivered: {
+    backgroundColor: COLORS.secondary,
+  },
+  modalStatusCancelled: {
+    backgroundColor: COLORS.error,
+  },
+  modalStatusText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  earningsBadge: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  earningsBadgeLabel: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    marginBottom: 4,
+  },
+  earningsBadgeValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  detailSection: {
     backgroundColor: COLORS.gray[50],
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...SHADOWS.small,
   },
-  photoOptionText: {
-    fontSize: 16,
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  detailContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+    marginTop: 4,
+  },
+  detailSubvalue: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    marginTop: 2,
+  },
+  timestampTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: 16,
+  },
+  timestampRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  timestampDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  timestampContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  timestampLabel: {
+    fontSize: 13,
+    fontWeight: '500',
     color: COLORS.gray[700],
   },
-  cancelButton: {
-    marginTop: 12,
+  timestampValue: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginTop: 2,
+  },
+  financialSection: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  financialTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: 12,
+  },
+  financialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  financialLabel: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+  },
+  financialLabelBold: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
+  financialValue: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+  },
+  financialValueNegative: {
+    fontSize: 14,
+    color: COLORS.error,
+  },
+  financialValueBold: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  financialDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray[200],
+    marginVertical: 8,
+  },
+  closeButton: {
+    backgroundColor: COLORS.gray[100],
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
   },
 });
