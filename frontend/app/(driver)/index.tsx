@@ -84,6 +84,47 @@ export default function DriverHome() {
     }
   };
 
+  // Handle pickup confirmation
+  const handleConfirmPickup = async () => {
+    if (!currentActiveJob) return;
+    try {
+      setProcessingAction(true);
+      const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+      await confirmPickup(currentActiveJob.delivery_id, dummyPhoto);
+      if (Platform.OS === 'web') {
+        window.alert('Commande récupérée !');
+      }
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible de confirmer'));
+      }
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+  // Handle delivery confirmation  
+  const handleConfirmDelivery = async () => {
+    if (!currentActiveJob) return;
+    try {
+      setProcessingAction(true);
+      const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+      await confirmDelivery(currentActiveJob.delivery_id, dummyPhoto);
+      if (Platform.OS === 'web') {
+        window.alert('Livraison terminée ! Félicitations !');
+      }
+      setShowCurrentDeliveryModal(false);
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible de confirmer'));
+      }
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
   // Filter jobs based on selected filter
   const getFilteredJobs = () => {
     if (selectedFilter === 'available') {
