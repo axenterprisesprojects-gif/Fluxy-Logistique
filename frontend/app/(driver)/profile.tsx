@@ -51,7 +51,11 @@ export default function DriverProfile() {
 
   const handleSave = async () => {
     if (!name.trim() || !vehicleType || !vehiclePlate.trim() || !vehicleBrand.trim()) {
-      showAlert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Veuillez remplir tous les champs obligatoires');
+      } else {
+        showAlert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+      }
       return;
     }
 
@@ -67,9 +71,18 @@ export default function DriverProfile() {
       });
       await refreshUser();
       setEditing(false);
-      showAlert('Succès', 'Profil mis à jour');
+      if (Platform.OS === 'web') {
+        window.alert('Profil mis à jour avec succès!');
+      } else {
+        showAlert('Succès', 'Profil mis à jour');
+      }
     } catch (error: any) {
-      showAlert('Erreur', error.message || 'Impossible de mettre à jour');
+      console.error('Save error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible de mettre à jour'));
+      } else {
+        showAlert('Erreur', error.message || 'Impossible de mettre à jour');
+      }
     } finally {
       setLoading(false);
     }
