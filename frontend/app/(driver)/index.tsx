@@ -455,37 +455,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   missionCard: {
-    marginBottom: 12,
+    marginBottom: 16,
     padding: 16,
   },
   missionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  missionInfo: {
-    flex: 1,
-    marginRight: 12,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   businessRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    flex: 1,
   },
   businessName: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.gray[900],
-  },
-  destinationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  destinationText: {
-    fontSize: 14,
-    color: COLORS.gray[600],
   },
   priceBadge: {
     backgroundColor: COLORS.primary + '15',
@@ -498,11 +486,87 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  itemsSection: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  itemsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  itemsLabel: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    fontWeight: '500',
+  },
+  itemsText: {
+    fontSize: 14,
+    color: COLORS.gray[800],
+    lineHeight: 20,
+  },
+  routeSection: {
+    marginBottom: 12,
+  },
+  routeItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  routeIcon: {
+    width: 24,
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  routeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  routeDotPickup: {
+    backgroundColor: COLORS.primary,
+  },
+  routeDotDelivery: {
+    backgroundColor: COLORS.secondary,
+  },
+  routeLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: COLORS.gray[200],
+    marginLeft: 11,
+  },
+  routeContent: {
+    flex: 1,
+    paddingLeft: 8,
+  },
+  routeLabel: {
+    fontSize: 11,
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  routeAddress: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  distanceText: {
+    fontSize: 13,
+    color: COLORS.gray[500],
+  },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.gray[100],
@@ -532,7 +596,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.secondary,
   },
-  acceptButton: {
+  swipeContainer: {
     marginTop: 12,
   },
   emptyContainer: {
