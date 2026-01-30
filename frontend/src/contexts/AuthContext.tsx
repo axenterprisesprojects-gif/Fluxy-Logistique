@@ -273,6 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionToken,
         loginWithGoogle,
         loginAsDriver,
+        loginAsBusiness,
+        registerBusiness,
         logout,
         refreshUser,
       }}
