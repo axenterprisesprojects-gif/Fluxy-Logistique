@@ -44,22 +44,22 @@ export default function BusinessProfile() {
     }
   };
 
-  const handleLogout = () => {
-    showDestructiveConfirm(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
-      async () => {
-        await logout();
-        if (Platform.OS === 'web') {
-          window.location.href = '/';
-        } else {
-          router.replace('/');
-        }
-      },
-      undefined,
-      'Déconnexion',
-      'Annuler'
-    );
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Force page reload on web to clear all state
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+      } else {
+        router.replace('/');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect anyway
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+      }
+    }
   };
 
   return (
