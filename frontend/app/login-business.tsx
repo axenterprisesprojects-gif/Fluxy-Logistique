@@ -3,16 +3,15 @@ import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Ale
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../src/contexts/AuthContext';
 import Button from '../src/components/Button';
 import Input from '../src/components/Input';
 import { COLORS } from '../src/constants/theme';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-
 export default function LoginBusiness() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { loginAsBusiness, registerBusiness } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
