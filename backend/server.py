@@ -380,29 +380,23 @@ async def google_auth_callback(request: Request, response: Response):
 
 @api_router.post("/auth/driver/login")
 async def driver_login(data: DriverLogin, response: Response):
-    """Login driver with phone number (no OTP for MVP)"""
+    """Login driver with phone and password"""
     phone = data.phone.strip()
     
     # Check if driver exists
     existing_driver = await db.users.find_one({"phone": phone, "role": "driver"}, {"_id": 0})
     
-    if existing_driver:
-        user_id = existing_driver["user_id"]
-    else:
-        # Create new driver
-        user_id = f"driver_{uuid.uuid4().hex[:12]}"
-        new_driver = {
-            "user_id": user_id,
-            "phone": phone,
-            "name": data.name or f"Chauffeur {phone[-4:]}",
-            "role": "driver",
-            "is_validated": False,
-            "created_at": datetime.now(timezone.utc),
-            "accepted_item_types": [],
-            "refused_item_types": [],
-            "documents": []
-        }
-        await db.users.insert_one(new_driver)
+    if not existing_driver:
+        raise HTTPException(status_code=401, detail="Numéro de téléphone ou mot de passe incorrect")
+    
+    # Verify password
+    if not existing_driver.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Mot de passe non configuré")
+    
+    if not verify_password(data.password, existing_driver["password_hash"]):
+        raise HTTPException(status_code=401, detail="Numéro de téléphone ou mot de passe incorrect")
+    
+    user_id = existing_driver["user_id"]
     
     # Create session
     session_token = f"driver_session_{uuid.uuid4().hex}"
@@ -429,7 +423,64 @@ async def driver_login(data: DriverLogin, response: Response):
         max_age=7 * 24 * 60 * 60
     )
     
-    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": driver, "session_token": session_token}
+
+@api_router.post("/auth/driver/register")
+async def driver_register(data: DriverRegisterRequest, response: Response):
+    """Register a new driver with phone and password"""
+    phone = data.phone.strip()
+    
+    # Check if phone already exists
+    existing_driver = await db.users.find_one({"phone": phone}, {"_id": 0})
+    if existing_driver:
+        raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé")
+    
+    # Create new driver
+    user_id = f"driver_{uuid.uuid4().hex[:12]}"
+    password_hash = hash_password(data.password)
+    
+    new_driver = {
+        "user_id": user_id,
+        "phone": phone,
+        "password_hash": password_hash,
+        "name": data.name.strip(),
+        "role": "driver",
+        "is_validated": False,
+        "created_at": datetime.now(timezone.utc),
+        "accepted_item_types": [],
+        "refused_item_types": [],
+        "documents": []
+    }
+    await db.users.insert_one(new_driver)
+    
+    # Create session
+    session_token = f"driver_session_{uuid.uuid4().hex}"
+    from datetime import timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     
     return {"user": driver, "session_token": session_token}
 
