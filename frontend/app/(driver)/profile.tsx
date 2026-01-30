@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
+import { showAlert, showDestructiveConfirm } from '../../src/utils/alert';
 import Button from '../../src/components/Button';
 import Input from '../../src/components/Input';
 import Card from '../../src/components/Card';
@@ -50,7 +51,7 @@ export default function DriverProfile() {
 
   const handleSave = async () => {
     if (!name.trim() || !vehicleType || !vehiclePlate.trim() || !vehicleBrand.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+      showAlert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
@@ -66,9 +67,9 @@ export default function DriverProfile() {
       });
       await refreshUser();
       setEditing(false);
-      Alert.alert('Succès', 'Profil mis à jour');
+      showAlert('Succès', 'Profil mis à jour');
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de mettre à jour');
+      showAlert('Erreur', error.message || 'Impossible de mettre à jour');
     } finally {
       setLoading(false);
     }
@@ -78,7 +79,7 @@ export default function DriverProfile() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission requise', 'Veuillez autoriser l\'accès à la galerie');
+        showAlert('Permission requise', 'Veuillez autoriser l\'accès à la galerie');
         return;
       }
 
@@ -96,10 +97,10 @@ export default function DriverProfile() {
           document_image: photoData,
         });
         await refreshUser();
-        Alert.alert('Succès', 'Document téléversé');
+        showAlert('Succès', 'Document téléversé');
       }
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de téléverser');
+      showAlert('Erreur', error.message || 'Impossible de téléverser');
     } finally {
       setLoading(false);
     }
@@ -114,20 +115,18 @@ export default function DriverProfile() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
+    showDestructiveConfirm(
       'Déconnexion',
       'Êtes-vous sûr de vouloir vous déconnecter ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/');
-          },
-        },
-      ]
+      async () => {
+        await logout();
+        router.replace('/');
+      },
+      undefined,
+      'Déconnexion',
+      'Annuler'
+    );
+  };
     );
   };
 
