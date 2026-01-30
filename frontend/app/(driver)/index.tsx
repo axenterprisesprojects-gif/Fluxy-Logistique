@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Platform, Modal, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
 import Card from '../../src/components/Card';
 import SwipeToAccept from '../../src/components/SwipeToAccept';
+import Button from '../../src/components/Button';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
 
 const FILTERS = [
@@ -19,13 +20,15 @@ export default function DriverHome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { getAvailableJobs, getDriverJobs, acceptJob } = useApi();
+  const { getAvailableJobs, getDriverJobs, acceptJob, confirmPickup, confirmDelivery } = useApi();
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('available');
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [showCurrentDeliveryModal, setShowCurrentDeliveryModal] = useState(false);
+  const [processingAction, setProcessingAction] = useState(false);
 
   const loadData = async () => {
     try {
