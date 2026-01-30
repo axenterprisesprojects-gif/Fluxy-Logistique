@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,23 +9,6 @@ import Button from '../../src/components/Button';
 import Input from '../../src/components/Input';
 import Card from '../../src/components/Card';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
-import { TouchableOpacity } from 'react-native';
-
-const ITEM_TYPES = [
-  { id: 'meubles', label: 'Meubles', icon: 'bed' },
-  { id: 'electromenager', label: 'Électroménager', icon: 'tv' },
-  { id: 'materiaux', label: 'Matériaux', icon: 'construct' },
-  { id: 'equipements', label: 'Équipements', icon: 'cog' },
-  { id: 'colis_lourds', label: 'Colis lourds', icon: 'cube' },
-  { id: 'autres', label: 'Autres', icon: 'ellipsis-horizontal' },
-];
-
-const TIME_SLOTS = [
-  { id: 'asap', label: 'Dès que possible' },
-  { id: '1-2h', label: '1 à 2 heures' },
-  { id: '2-4h', label: '2 à 4 heures' },
-  { id: '4-8h', label: '4 à 8 heures' },
-];
 
 export default function NewDelivery() {
   const router = useRouter();
@@ -40,10 +23,11 @@ export default function NewDelivery() {
   const [businessName, setBusinessName] = useState(user?.business_name || '');
   const [businessAddress, setBusinessAddress] = useState(user?.business_address || '');
   
-  // Delivery form
-  const [selectedItemType, setSelectedItemType] = useState('');
+  // Delivery form - New fields
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [itemDescription, setItemDescription] = useState('');
   const [destinationArea, setDestinationArea] = useState('');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
 
   const needsProfileSetup = !user?.business_address;
 
@@ -69,21 +53,38 @@ export default function NewDelivery() {
   };
 
   const handleCreateDelivery = async () => {
-    if (!selectedItemType || !destinationArea.trim() || !selectedTimeSlot) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    // Validate all required fields
+    if (!customerName.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer le nom du client');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer le numéro du client');
+      return;
+    }
+    if (!itemDescription.trim()) {
+      Alert.alert('Erreur', 'Veuillez décrire les articles à livrer');
+      return;
+    }
+    if (!destinationArea.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer le quartier de livraison');
       return;
     }
 
     try {
       setLoading(true);
-      await createDelivery({
-        item_type: selectedItemType,
+      const result = await createDelivery({
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        item_description: itemDescription.trim(),
         destination_area: destinationArea.trim(),
-        time_slot: selectedTimeSlot,
       });
-      Alert.alert('Succès', 'Votre demande de livraison a été créée', [
-        { text: 'OK', onPress: () => router.push('/(business)/deliveries') }
-      ]);
+      
+      Alert.alert(
+        'Succès', 
+        `Demande créée avec succès!\n\nCode de livraison: ${result.delivery_code}`, 
+        [{ text: 'OK', onPress: () => router.push('/(business)/deliveries') }]
+      );
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Impossible de créer la livraison');
     } finally {
@@ -164,7 +165,7 @@ export default function NewDelivery() {
             <View style={[styles.stepDot, styles.stepDotActive]} />
           </View>
           <Text style={styles.stepTitle}>Nouvelle livraison</Text>
-          <Text style={styles.stepSubtitle}>Décrivez votre demande</Text>
+          <Text style={styles.stepSubtitle}>Remplissez les informations de livraison</Text>
         </View>
 
         {/* Pickup Address */}
@@ -176,67 +177,50 @@ export default function NewDelivery() {
           <Text style={styles.addressText}>{user?.business_address}</Text>
         </Card>
 
-        {/* Item Type Selection */}
-        <Text style={styles.sectionTitle}>Type d'article</Text>
-        <View style={styles.itemGrid}>
-          {ITEM_TYPES.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.itemCard,
-                selectedItemType === item.id && styles.itemCardSelected,
-              ]}
-              onPress={() => setSelectedItemType(item.id)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={item.icon as any}
-                size={24}
-                color={selectedItemType === item.id ? COLORS.white : COLORS.gray[600]}
-              />
-              <Text
-                style={[
-                  styles.itemLabel,
-                  selectedItemType === item.id && styles.itemLabelSelected,
-                ]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Customer Information */}
+        <Text style={styles.sectionTitle}>Informations client</Text>
+        <Card style={styles.formCard}>
+          <Input
+            label="Nom du client"
+            placeholder="Ex: Jean Dupont"
+            value={customerName}
+            onChangeText={setCustomerName}
+            autoCapitalize="words"
+          />
+          <Input
+            label="Numéro du client"
+            placeholder="Ex: +225 07 00 00 00 00"
+            value={customerPhone}
+            onChangeText={setCustomerPhone}
+            keyboardType="phone-pad"
+          />
+        </Card>
 
-        {/* Destination */}
-        <Input
-          label="Zone de destination"
-          placeholder="Ex: Cocody, Plateau, Yopougon..."
-          value={destinationArea}
-          onChangeText={setDestinationArea}
-        />
+        {/* Delivery Information */}
+        <Text style={styles.sectionTitle}>Détails de la livraison</Text>
+        <Card style={styles.formCard}>
+          <Input
+            label="Articles à livrer"
+            placeholder="Ex: 2 canapés, 1 table basse, 3 chaises"
+            value={itemDescription}
+            onChangeText={setItemDescription}
+            multiline
+            numberOfLines={3}
+          />
+          <Input
+            label="Quartier de livraison"
+            placeholder="Ex: Cocody Angré, Abidjan"
+            value={destinationArea}
+            onChangeText={setDestinationArea}
+          />
+        </Card>
 
-        {/* Time Slot */}
-        <Text style={styles.sectionTitle}>Créneau souhaité</Text>
-        <View style={styles.timeSlotContainer}>
-          {TIME_SLOTS.map((slot) => (
-            <TouchableOpacity
-              key={slot.id}
-              style={[
-                styles.timeSlotCard,
-                selectedTimeSlot === slot.id && styles.timeSlotCardSelected,
-              ]}
-              onPress={() => setSelectedTimeSlot(slot.id)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.timeSlotLabel,
-                  selectedTimeSlot === slot.id && styles.timeSlotLabelSelected,
-                ]}
-              >
-                {slot.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Info Box */}
+        <View style={styles.infoBoxBottom}>
+          <Ionicons name="information-circle" size={20} color={COLORS.info} />
+          <Text style={styles.infoText}>
+            Un code de livraison unique sera généré après la création de la demande.
+          </Text>
         </View>
 
         {/* Submit */}
@@ -303,7 +287,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   formCard: {
-    padding: 20,
+    padding: 16,
+    marginBottom: 16,
   },
   infoBox: {
     flexDirection: 'row',
@@ -312,6 +297,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
     marginBottom: 16,
+  },
+  infoBoxBottom: {
+    flexDirection: 'row',
+    backgroundColor: '#EFF6FF',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginBottom: 16,
+    marginTop: 8,
   },
   infoText: {
     flex: 1,
@@ -342,60 +336,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray[700],
     marginBottom: 12,
-  },
-  itemGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  itemCard: {
-    width: '31%',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...SHADOWS.small,
-  },
-  itemCardSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  itemLabel: {
-    fontSize: 12,
-    color: COLORS.gray[600],
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  itemLabelSelected: {
-    color: COLORS.white,
-  },
-  timeSlotContainer: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  timeSlotCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...SHADOWS.small,
-  },
-  timeSlotCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#EEF2FF',
-  },
-  timeSlotLabel: {
-    fontSize: 15,
-    color: COLORS.gray[700],
-    textAlign: 'center',
-  },
-  timeSlotLabelSelected: {
-    color: COLORS.primary,
-    fontWeight: '600',
   },
   submitButton: {
     marginTop: 8,
