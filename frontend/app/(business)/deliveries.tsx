@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../src/hooks/useApi';
@@ -16,6 +17,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function Deliveries() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getBusinessDeliveries } = useApi();
   const [deliveries, setDeliveries] = useState<any[]>([]);
