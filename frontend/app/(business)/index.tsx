@@ -118,21 +118,33 @@ export default function BusinessHome() {
             </Card>
           ) : (
             deliveries.slice(0, 5).map((delivery) => (
-              <Card key={delivery.delivery_id} style={styles.deliveryCard}>
-                <View style={styles.deliveryHeader}>
-                  <View>
-                    <Text style={styles.deliveryType}>{delivery.item_type}</Text>
-                    <Text style={styles.deliveryDestination}>{delivery.destination_area}</Text>
+              <TouchableOpacity 
+                key={delivery.delivery_id} 
+                onPress={() => router.push(`/(business)/delivery/${delivery.delivery_id}`)}
+                activeOpacity={0.7}
+              >
+                <Card style={styles.deliveryCard}>
+                  <View style={styles.deliveryHeader}>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.deliveryCodeRow}>
+                        <Text style={styles.deliveryCode}>{delivery.delivery_code || delivery.delivery_id}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+                      </View>
+                      {delivery.customer_name && (
+                        <Text style={styles.customerName}>{delivery.customer_name}</Text>
+                      )}
+                      <Text style={styles.deliveryDestination}>{delivery.destination_area}</Text>
+                    </View>
+                    <StatusBadge status={delivery.status} />
                   </View>
-                  <StatusBadge status={delivery.status} />
-                </View>
-                <View style={styles.deliveryFooter}>
-                  <Text style={styles.deliveryPrice}>{delivery.total_price.toLocaleString()} F</Text>
-                  <Text style={styles.deliveryDate}>
-                    {new Date(delivery.created_at).toLocaleDateString('fr-FR')}
-                  </Text>
-                </View>
-              </Card>
+                  <View style={styles.deliveryFooter}>
+                    <Text style={styles.deliveryPrice}>{delivery.total_price.toLocaleString()} F</Text>
+                    <Text style={styles.deliveryDate}>
+                      {new Date(delivery.created_at).toLocaleDateString('fr-FR')}
+                    </Text>
+                  </View>
+                </Card>
+              </TouchableOpacity>
             ))
           )}
         </View>
