@@ -421,6 +421,113 @@ async def driver_login(data: DriverLogin, response: Response):
     
     return {"user": driver, "session_token": session_token}
 
+@api_router.post("/auth/business/register")
+async def business_register(data: BusinessRegisterRequest, response: Response):
+    """Register a new business with email/password"""
+    email = data.email.strip().lower()
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+    
+    # Validate password
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    # Create new business user
+    user_id = f"business_{uuid.uuid4().hex[:12]}"
+    hashed_pw = hash_password(data.password)
+    
+    new_user = {
+        "user_id": user_id,
+        "email": email,
+        "password_hash": hashed_pw,
+        "name": data.name.strip(),
+        "role": "business",
+        "is_validated": True,
+        "business_name": data.business_name.strip(),
+        "business_address": data.business_address.strip(),
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.users.insert_one(new_user)
+    
+    # Create session
+    session_token = f"business_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
+@api_router.post("/auth/business/login")
+async def business_login(data: BusinessLoginRequest, response: Response):
+    """Login business with email/password"""
+    email = data.email.strip().lower()
+    
+    # Find user
+    user_doc = await db.users.find_one({"email": email, "role": "business"})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    # Verify password
+    if not user_doc.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Ce compte utilise la connexion Google")
+    
+    if not verify_password(data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    user_id = user_doc["user_id"]
+    
+    # Create session
+    session_token = f"business_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
 @api_router.get("/auth/me")
 async def get_me(user: User = Depends(require_user)):
     """Get current user data"""
