@@ -267,6 +267,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  deliveryCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  deliveryCode: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+  },
   deliveryType: {
     fontSize: 16,
     fontWeight: '600',
