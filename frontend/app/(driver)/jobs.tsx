@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
+import { showAlert, showConfirm } from '../../src/utils/alert';
 import Card from '../../src/components/Card';
 import Button from '../../src/components/Button';
 import LoadingScreen from '../../src/components/LoadingScreen';
