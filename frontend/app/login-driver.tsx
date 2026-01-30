@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,24 +11,50 @@ import { COLORS } from '../src/constants/theme';
 export default function LoginDriver() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { loginAsDriver, isLoading } = useAuth();
+  const { loginAsDriver, registerDriver, isLoading } = useAuth();
+  
+  const [isLogin, setIsLogin] = useState(true);
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSubmit = async () => {
     if (!phone.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer votre numéro de téléphone');
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Veuillez entrer votre numéro de téléphone');
+      }
+      return;
+    }
+    if (!password.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Veuillez entrer votre mot de passe');
+      }
+      return;
+    }
+    if (!isLogin && !name.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Veuillez entrer votre nom');
+      }
       return;
     }
 
     try {
       setLoading(true);
-      await loginAsDriver(phone.trim(), name.trim() || undefined);
+      
+      if (isLogin) {
+        await loginAsDriver(phone.trim(), password);
+      } else {
+        await registerDriver(phone.trim(), password, name.trim());
+      }
+      
       router.replace('/(driver)');
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Erreur', 'Impossible de se connecter. Veuillez réessayer.');
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Une erreur est survenue'));
+      }
     } finally {
       setLoading(false);
     }
@@ -62,12 +88,28 @@ export default function LoginDriver() {
           </View>
           <Text style={styles.title}>Espace Chauffeur</Text>
           <Text style={styles.subtitle}>
-            Connectez-vous pour voir et accepter des missions
+            {isLogin ? 'Connectez-vous pour voir et accepter des missions' : 'Créez votre compte chauffeur'}
           </Text>
         </View>
 
-        {/* Login Form */}
-        <View style={styles.loginContainer}>
+        {/* Tab Switcher */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, isLogin && styles.tabActive]}
+            onPress={() => setIsLogin(true)}
+          >
+            <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>Connexion</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, !isLogin && styles.tabActive]}
+            onPress={() => setIsLogin(false)}
+          >
+            <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>Inscription</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Form */}
+        <View style={styles.formContainer}>
           <Input
             label="Numéro de téléphone"
             placeholder="Ex: +241 07 00 00 00"
@@ -76,26 +118,42 @@ export default function LoginDriver() {
             keyboardType="phone-pad"
           />
 
-          <Input
-            label="Votre nom (optionnel)"
-            placeholder="Ex: Kouamé Jean"
-            value={name}
-            onChangeText={setName}
-          />
+          {!isLogin && (
+            <Input
+              label="Votre nom"
+              placeholder="Ex: Kouamé Jean"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
+          )}
+
+          <View style={styles.passwordContainer}>
+            <Input
+              label="Mot de passe"
+              placeholder="Votre mot de passe"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off' : 'eye'}
+                size={24}
+                color={COLORS.gray[400]}
+              />
+            </TouchableOpacity>
+          </View>
 
           <Button
-            title="Se connecter"
-            onPress={handleLogin}
+            title={isLogin ? 'Se connecter' : "S'inscrire"}
+            onPress={handleSubmit}
             loading={loading || isLoading}
-            style={styles.loginButton}
+            style={styles.submitButton}
           />
-
-          <View style={styles.infoContainer}>
-            <Ionicons name="information-circle" size={20} color={COLORS.info} />
-            <Text style={styles.infoText}>
-              Si c'est votre première connexion, un compte sera créé automatiquement.
-            </Text>
-          </View>
         </View>
 
         {/* Features */}
@@ -134,7 +192,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   iconContainer: {
     width: 96,
@@ -156,25 +214,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
-  loginContainer: {
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.gray[100],
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  tabActive: {
+    backgroundColor: COLORS.white,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.gray[500],
+  },
+  tabTextActive: {
+    color: COLORS.secondary,
+  },
+  formContainer: {
     marginBottom: 32,
   },
-  loginButton: {
+  passwordContainer: {
+    position: 'relative',
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 16,
+    top: 38,
+  },
+  submitButton: {
     marginTop: 8,
-    marginBottom: 16,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#EFF6FF',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.gray[600],
-    lineHeight: 20,
   },
   featuresContainer: {
     backgroundColor: COLORS.white,
