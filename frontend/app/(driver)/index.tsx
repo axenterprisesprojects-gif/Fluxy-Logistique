@@ -106,25 +106,60 @@ export default function DriverHome() {
     
     return (
       <Card style={styles.missionCard}>
+        {/* Header: Business Name + Price */}
         <View style={styles.missionHeader}>
-          <View style={styles.missionInfo}>
-            {/* Business Name */}
-            <View style={styles.businessRow}>
-              <Ionicons name="business" size={16} color={COLORS.primary} />
-              <Text style={styles.businessName}>{item.business_name}</Text>
-            </View>
-            
-            {/* Destination */}
-            <View style={styles.destinationRow}>
-              <Ionicons name="location" size={16} color={COLORS.secondary} />
-              <Text style={styles.destinationText}>{item.destination_area}</Text>
-            </View>
+          <View style={styles.businessRow}>
+            <Ionicons name="business" size={18} color={COLORS.primary} />
+            <Text style={styles.businessName}>{item.business_name}</Text>
           </View>
-          
-          {/* Price */}
           <View style={styles.priceBadge}>
             <Text style={styles.priceValue}>{item.total_price?.toLocaleString()} F</Text>
           </View>
+        </View>
+
+        {/* Items to transport */}
+        {(item.item_description || item.item_type) && (
+          <View style={styles.itemsSection}>
+            <View style={styles.itemsHeader}>
+              <Ionicons name="cube" size={16} color={COLORS.gray[500]} />
+              <Text style={styles.itemsLabel}>À transporter</Text>
+            </View>
+            <Text style={styles.itemsText}>{item.item_description || item.item_type}</Text>
+          </View>
+        )}
+
+        {/* Route: Pickup → Delivery */}
+        <View style={styles.routeSection}>
+          {/* Pickup */}
+          <View style={styles.routeItem}>
+            <View style={styles.routeIcon}>
+              <View style={[styles.routeDot, styles.routeDotPickup]} />
+            </View>
+            <View style={styles.routeContent}>
+              <Text style={styles.routeLabel}>Récupération</Text>
+              <Text style={styles.routeAddress}>{item.pickup_address || 'Adresse de l\'entreprise'}</Text>
+            </View>
+          </View>
+
+          {/* Line connecting */}
+          <View style={styles.routeLine} />
+
+          {/* Delivery */}
+          <View style={styles.routeItem}>
+            <View style={styles.routeIcon}>
+              <View style={[styles.routeDot, styles.routeDotDelivery]} />
+            </View>
+            <View style={styles.routeContent}>
+              <Text style={styles.routeLabel}>Livraison</Text>
+              <Text style={styles.routeAddress}>{item.destination_area}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Distance */}
+        <View style={styles.distanceRow}>
+          <Ionicons name="navigate" size={14} color={COLORS.gray[400]} />
+          <Text style={styles.distanceText}>{item.distance_km} km</Text>
         </View>
 
         {/* Status for my jobs */}
@@ -145,17 +180,15 @@ export default function DriverHome() {
           </View>
         )}
 
-        {/* Accept button for available jobs */}
+        {/* Swipe to accept for available jobs */}
         {isAvailable && (
-          <Button
-            title={isValidated ? "Accepter" : "Profil non validé"}
-            onPress={() => handleAcceptJob(item.delivery_id)}
-            loading={acceptingId === item.delivery_id}
-            disabled={!isValidated}
-            variant={isValidated ? 'secondary' : 'outline'}
-            size="small"
-            style={styles.acceptButton}
-          />
+          <View style={styles.swipeContainer}>
+            <SwipeToAccept
+              onAccept={() => handleAcceptJob(item.delivery_id)}
+              disabled={!isValidated}
+              loading={acceptingId === item.delivery_id}
+            />
+          </View>
         )}
       </Card>
     );
