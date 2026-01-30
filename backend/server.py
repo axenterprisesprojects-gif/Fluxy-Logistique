@@ -167,11 +167,12 @@ class DeliveryRequest(BaseModel):
     delivered_at: Optional[datetime] = None
 
 class DeliveryRequestCreate(BaseModel):
+    customer_name: str
+    customer_phone: str
+    item_description: str
     destination_area: str
     destination_lat: Optional[float] = None
     destination_lng: Optional[float] = None
-    item_type: str
-    time_slot: str
 
 class DeliveryConfirmPhoto(BaseModel):
     photo: str  # base64
