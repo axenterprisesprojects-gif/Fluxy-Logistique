@@ -1,14 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/contexts/AuthContext';
 import LoadingScreen from '../src/components/LoadingScreen';
-import Button from '../src/components/Button';
 import { COLORS, SHADOWS } from '../src/constants/theme';
-
-const { width } = Dimensions.get('window');
 
 export default function Index() {
   const router = useRouter();
@@ -22,8 +19,6 @@ export default function Index() {
         router.replace('/(business)');
       } else if (user.role === 'driver') {
         router.replace('/(driver)');
-      } else if (user.role === 'admin') {
-        router.replace('/(admin)');
       }
     }
   }, [isLoading, isAuthenticated, user]);
@@ -37,71 +32,101 @@ export default function Index() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Ionicons name="cube" size={40} color={COLORS.primary} />
+          <View style={styles.logoIcon}>
+            <Ionicons name="cube" size={28} color={COLORS.white} />
+          </View>
           <Text style={styles.logoText}>QuickHaul</Text>
         </View>
         <Text style={styles.tagline}>Livraison d'articles lourds</Text>
       </View>
 
       {/* Main Content */}
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.welcomeText}>Bienvenue</Text>
         <Text style={styles.subtitle}>Choisissez votre profil pour continuer</Text>
 
-        {/* Role Selection Cards */}
-        <View style={styles.cardsContainer}>
-          {/* Business Card */}
-          <TouchableOpacity
-            style={styles.roleCard}
-            onPress={() => router.push('/login-business')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="business" size={32} color={COLORS.primary} />
-            </View>
+        {/* Business Card */}
+        <TouchableOpacity
+          style={styles.roleCard}
+          onPress={() => router.push('/login-business')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+            <Ionicons name="business" size={28} color={COLORS.primary} />
+          </View>
+          <View style={styles.cardContent}>
             <Text style={styles.roleTitle}>Entreprise</Text>
             <Text style={styles.roleDescription}>
-              Créez des demandes de livraison et suivez vos expéditions
+              Créez des demandes de livraison et suivez vos expéditions en temps réel
             </Text>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
-          </TouchableOpacity>
+          </View>
+          <View style={styles.arrowContainer}>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </View>
+        </TouchableOpacity>
 
-          {/* Driver Card */}
-          <TouchableOpacity
-            style={styles.roleCard}
-            onPress={() => router.push('/login-driver')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="car" size={32} color={COLORS.secondary} />
-            </View>
+        {/* Driver Card */}
+        <TouchableOpacity
+          style={styles.roleCard}
+          onPress={() => router.push('/login-driver')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
+            <Ionicons name="car" size={28} color={COLORS.secondary} />
+          </View>
+          <View style={styles.cardContent}>
             <Text style={styles.roleTitle}>Chauffeur</Text>
             <Text style={styles.roleDescription}>
-              Acceptez des missions et gagnez de l'argent
+              Acceptez des missions de livraison et gagnez de l'argent
             </Text>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
-          </TouchableOpacity>
+          </View>
+          <View style={styles.arrowContainer}>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </View>
+        </TouchableOpacity>
 
-          {/* Admin Card */}
-          <TouchableOpacity
-            style={styles.roleCard}
-            onPress={() => router.push('/login-admin')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="settings" size={32} color={COLORS.warning} />
+        {/* Features Section */}
+        <View style={styles.featuresSection}>
+          <Text style={styles.featuresTitle}>Pourquoi QuickHaul ?</Text>
+          
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="flash" size={18} color={COLORS.primary} />
             </View>
-            <Text style={styles.roleTitle}>Administrateur</Text>
-            <Text style={styles.roleDescription}>
-              Gérez la plateforme et les tarifs
-            </Text>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.gray[400]} />
-          </TouchableOpacity>
+            <View style={styles.featureContent}>
+              <Text style={styles.featureLabel}>Rapide</Text>
+              <Text style={styles.featureText}>Livraison en quelques heures</Text>
+            </View>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="shield-checkmark" size={18} color={COLORS.primary} />
+            </View>
+            <View style={styles.featureContent}>
+              <Text style={styles.featureLabel}>Sécurisé</Text>
+              <Text style={styles.featureText}>Chauffeurs vérifiés</Text>
+            </View>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="pricetag" size={18} color={COLORS.primary} />
+            </View>
+            <View style={styles.featureContent}>
+              <Text style={styles.featureLabel}>Transparent</Text>
+              <Text style={styles.featureText}>Tarification claire</Text>
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 8 }]}>
         <Text style={styles.footerText}>© 2025 QuickHaul - Tous droits réservés</Text>
       </View>
     </View>
@@ -115,15 +140,24 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  logoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.primary,
   },
@@ -132,60 +166,112 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     marginTop: 4,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   welcomeText: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.gray[900],
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.gray[500],
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: 24,
-  },
-  cardsContainer: {
-    gap: 16,
   },
   roleCard: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
     ...SHADOWS.medium,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+  },
+  cardContent: {
+    flex: 1,
+    marginLeft: 14,
+    marginRight: 8,
   },
   roleTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.gray[900],
-    flex: 1,
+    marginBottom: 4,
   },
   roleDescription: {
     fontSize: 13,
     color: COLORS.gray[500],
-    flex: 2,
-    marginRight: 8,
+    lineHeight: 18,
+  },
+  arrowContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuresSection: {
+    marginTop: 24,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 20,
+    ...SHADOWS.small,
+  },
+  featuresTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  featureIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureContent: {
+    marginLeft: 12,
+  },
+  featureLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
+  featureText: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginTop: 1,
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.gray[400],
   },
 });
