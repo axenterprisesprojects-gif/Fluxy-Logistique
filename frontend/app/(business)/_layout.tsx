@@ -36,18 +36,15 @@ export default function BusinessLayout() {
       <Tabs.Screen
         name="new-delivery"
         options={{
-          title: 'Nouvelle',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle" size={size} color={color} />
-          ),
+          href: null, // Hide from tab bar but keep accessible
         }}
       />
       <Tabs.Screen
         name="deliveries"
         options={{
-          title: 'Livraisons',
+          title: 'Historique',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
