@@ -34,18 +34,6 @@ export default function BusinessLayout() {
         }}
       />
       <Tabs.Screen
-        name="new-delivery"
-        options={{
-          href: null, // Hide from tab bar but keep accessible
-        }}
-      />
-      <Tabs.Screen
-        name="delivery"
-        options={{
-          href: null, // Hide from tab bar - dynamic route for delivery details
-        }}
-      />
-      <Tabs.Screen
         name="deliveries"
         options={{
           title: 'Historique',
@@ -61,6 +49,19 @@ export default function BusinessLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
+        }}
+      />
+      {/* Hidden screens */}
+      <Tabs.Screen
+        name="new-delivery"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="delivery/[id]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
