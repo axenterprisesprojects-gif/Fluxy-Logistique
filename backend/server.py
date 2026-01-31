@@ -184,6 +184,9 @@ class DeliveryRequestCreate(BaseModel):
     destination_area: str
     destination_lat: Optional[float] = None
     destination_lng: Optional[float] = None
+    pickup_time_slot: Optional[str] = None  # e.g., "10h-11h"
+    delivery_time_slot: Optional[str] = None  # e.g., "10h-12h"
+    total_price: Optional[float] = None  # User-defined price
 
 class DeliveryConfirmPhoto(BaseModel):
     photo: str  # base64
