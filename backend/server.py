@@ -1073,7 +1073,7 @@ async def update_commission(commission_percentage: float, user: User = Depends(r
 
 @api_router.get("/")
 async def root():
-    return {"message": "QuickHaul API - Livraison d'articles lourds"}
+    return {"message": "Fluxy Logistique API - Livraison d'articles lourds"}
 
 @api_router.get("/item-types")
 async def get_item_types():

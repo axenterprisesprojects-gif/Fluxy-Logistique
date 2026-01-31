@@ -35,7 +35,7 @@ export default function Index() {
           <View style={styles.logoIcon}>
             <Ionicons name="cube" size={28} color={COLORS.white} />
           </View>
-          <Text style={styles.logoText}>QuickHaul</Text>
+          <Text style={styles.logoText}>Fluxy Logistique</Text>
         </View>
         <Text style={styles.tagline}>Livraison d'articles lourds</Text>
       </View>
@@ -91,7 +91,7 @@ export default function Index() {
 
         {/* Features Section */}
         <View style={styles.featuresSection}>
-          <Text style={styles.featuresTitle}>Pourquoi QuickHaul ?</Text>
+          <Text style={styles.featuresTitle}>Pourquoi Fluxy Logistique ?</Text>
           
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
@@ -127,7 +127,7 @@ export default function Index() {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 8 }]}>
-        <Text style={styles.footerText}>© 2025 QuickHaul - Tous droits réservés</Text>
+        <Text style={styles.footerText}>© 2025 Fluxy Logistique - Tous droits réservés</Text>
       </View>
     </View>
   );

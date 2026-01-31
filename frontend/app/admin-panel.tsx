@@ -258,7 +258,7 @@ export default function AdminPanel() {
             <View style={styles.logoIcon}>
               <Ionicons name="cube" size={28} color={COLORS.white} />
             </View>
-            <Text style={styles.logoText}>QuickHaul</Text>
+            <Text style={styles.logoText}>Fluxy Logistique</Text>
           </View>
           <Text style={styles.loginSubtitle}>Panneau d'administration</Text>
           
@@ -318,7 +318,7 @@ export default function AdminPanel() {
       <View style={styles.sidebar}>
         <View style={styles.sidebarLogo}>
           <Ionicons name="cube" size={24} color={COLORS.primary} />
-          <Text style={styles.sidebarTitle}>QuickHaul</Text>
+          <Text style={styles.sidebarTitle}>Fluxy Logistique</Text>
         </View>
         
         {[
