@@ -690,8 +690,19 @@ async def create_delivery(data: DeliveryRequestCreate, user: User = Depends(requ
         data.destination_lat or 0, data.destination_lng or 0
     )
     
-    # Calculate price
-    pricing = await calculate_price(distance)
+    # Use user-defined price if provided, otherwise calculate
+    if data.total_price and data.total_price > 0:
+        total_price = data.total_price
+        # Get commission percentage
+        settings = await db.platform_settings.find_one({"setting_type": "commission"})
+        commission_pct = settings.get("commission_percentage", 15.0) if settings else 15.0
+        commission = total_price * (commission_pct / 100)
+        driver_earnings = total_price - commission
+    else:
+        pricing = await calculate_price(distance)
+        total_price = pricing["total_price"]
+        commission = pricing["commission"]
+        driver_earnings = pricing["driver_earnings"]
     
     delivery = DeliveryRequest(
         business_id=user.user_id,
@@ -705,13 +716,19 @@ async def create_delivery(data: DeliveryRequestCreate, user: User = Depends(requ
         customer_name=data.customer_name,
         customer_phone=data.customer_phone,
         item_description=data.item_description,
+        time_slot=data.pickup_time_slot,  # Store pickup time slot
         distance_km=distance,
-        total_price=pricing["total_price"],
-        commission=pricing["commission"],
-        driver_earnings=pricing["driver_earnings"]
+        total_price=total_price,
+        commission=commission,
+        driver_earnings=driver_earnings
     )
     
-    await db.delivery_requests.insert_one(delivery.dict())
+    # Store delivery time slot in the document
+    delivery_dict = delivery.dict()
+    delivery_dict["pickup_time_slot"] = data.pickup_time_slot
+    delivery_dict["delivery_time_slot"] = data.delivery_time_slot
+    
+    await db.delivery_requests.insert_one(delivery_dict)
     
     return delivery
 
