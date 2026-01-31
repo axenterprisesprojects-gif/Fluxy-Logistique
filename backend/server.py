@@ -939,9 +939,66 @@ async def validate_driver(user_id: str, user: User = Depends(require_admin)):
 
 @api_router.get("/admin/businesses")
 async def admin_get_businesses(user: User = Depends(require_admin)):
-    """Get all businesses"""
+    """Get all businesses with delivery stats"""
     businesses = await db.users.find({"role": "business"}, {"_id": 0}).to_list(500)
+    
+    # Add delivery stats for each business
+    for business in businesses:
+        deliveries = await db.delivery_requests.find(
+            {"business_id": business["user_id"]}, 
+            {"_id": 0}
+        ).to_list(1000)
+        
+        total_deliveries = len(deliveries)
+        pending = len([d for d in deliveries if d.get("status") == "pending"])
+        in_progress = len([d for d in deliveries if d.get("status") in ["accepted", "pickup_confirmed"]])
+        completed = len([d for d in deliveries if d.get("status") == "delivered"])
+        total_spent = sum(d.get("total_price", 0) for d in deliveries if d.get("status") == "delivered")
+        
+        business["stats"] = {
+            "total_deliveries": total_deliveries,
+            "pending": pending,
+            "in_progress": in_progress,
+            "completed": completed,
+            "total_spent": total_spent
+        }
+    
     return businesses
+
+@api_router.get("/admin/businesses/{business_id}")
+async def admin_get_business_detail(business_id: str, user: User = Depends(require_admin)):
+    """Get detailed info for a specific business"""
+    business = await db.users.find_one({"user_id": business_id, "role": "business"}, {"_id": 0})
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Boutique non trouvée")
+    
+    # Get all deliveries for this business
+    deliveries = await db.delivery_requests.find(
+        {"business_id": business_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Calculate stats
+    total_deliveries = len(deliveries)
+    pending = len([d for d in deliveries if d.get("status") == "pending"])
+    in_progress = len([d for d in deliveries if d.get("status") in ["accepted", "pickup_confirmed"]])
+    completed = len([d for d in deliveries if d.get("status") == "delivered"])
+    cancelled = len([d for d in deliveries if d.get("status") == "cancelled"])
+    total_spent = sum(d.get("total_price", 0) for d in deliveries if d.get("status") == "delivered")
+    
+    return {
+        "business": business,
+        "deliveries": deliveries,
+        "stats": {
+            "total_deliveries": total_deliveries,
+            "pending": pending,
+            "in_progress": in_progress,
+            "completed": completed,
+            "cancelled": cancelled,
+            "total_spent": total_spent
+        }
+    }
 
 # Pricing Management
 @api_router.get("/admin/pricing")
