@@ -40,6 +40,12 @@ export default function BusinessLayout() {
         }}
       />
       <Tabs.Screen
+        name="delivery"
+        options={{
+          href: null, // Hide from tab bar - dynamic route for delivery details
+        }}
+      />
+      <Tabs.Screen
         name="deliveries"
         options={{
           title: 'Historique',
