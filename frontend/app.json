@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "QuickHaul",
-    "slug": "quickhaul",
+    "name": "Fluxy Logistique",
+    "slug": "fluxy-logistique",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "quickhaul",
+    "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.quickhaul.app",
+      "bundleIdentifier": "com.fluxylogistique.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Pour prendre des photos de livraison",
         "NSPhotoLibraryUsageDescription": "Pour sélectionner des documents"
@@ -22,7 +22,7 @@
         "backgroundColor": "#2563EB"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.quickhaul.app",
+      "package": "com.fluxylogistique.app",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE"
