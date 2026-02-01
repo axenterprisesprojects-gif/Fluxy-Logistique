@@ -183,43 +183,71 @@ backend:
 frontend:
   - task: "Landing page with role selection"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/index.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Landing page working - Fluxy Logistique branding"
   
   - task: "Driver login screen"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/login-driver.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Driver login with phone/password works correctly"
   
   - task: "Business dashboard"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/(business)/index.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Business dashboard with KPIs and delivery list works - shows customer name, items, time slot, price"
+  
+  - task: "New delivery form"
+    implemented: true
+    working: true
+    file: "app/(business)/new-delivery.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ New delivery form complete with: neighborhood dropdown (searchable), time slot selector (with auto delivery time), price stepper (+/- 5000F), customer info fields"
   
   - task: "Driver dashboard"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/(driver)/index.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Driver dashboard shows available jobs with time slot, items, and price breakdown"
   
   - task: "Admin dashboard"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/(admin)/index.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
 
 metadata:
   created_by: "main_agent"
