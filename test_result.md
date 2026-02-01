@@ -240,6 +240,21 @@ frontend:
       - working: true
         agent: "main"
         comment: "Driver dashboard shows available jobs with time slot, items, and price breakdown"
+      - working: true
+        agent: "main"
+        comment: "✅ Added photo capture feature for pickup and delivery confirmation. Modal shows camera and gallery options."
+  
+  - task: "Photo capture for pickup/delivery"
+    implemented: true
+    working: true
+    file: "src/components/PhotoCapture.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ NEW: PhotoCapture component created with camera and gallery support. Integrated into driver workflow for confirming pickup and delivery."
   
   - task: "Admin dashboard"
     implemented: true
