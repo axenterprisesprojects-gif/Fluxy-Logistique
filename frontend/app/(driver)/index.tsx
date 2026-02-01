@@ -30,6 +30,8 @@ export default function DriverHome() {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [showCurrentDeliveryModal, setShowCurrentDeliveryModal] = useState(false);
   const [processingAction, setProcessingAction] = useState(false);
+  const [showPickupPhotoModal, setShowPickupPhotoModal] = useState(false);
+  const [showDeliveryPhotoModal, setShowDeliveryPhotoModal] = useState(false);
 
   const loadData = async () => {
     try {
