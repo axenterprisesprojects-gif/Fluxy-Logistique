@@ -636,6 +636,28 @@ export default function DriverHome() {
           </View>
         </View>
       </Modal>
+
+      {/* Photo Capture Modal - Pickup */}
+      <PhotoCapture
+        visible={showPickupPhotoModal}
+        onClose={() => setShowPickupPhotoModal(false)}
+        onCapture={handlePickupPhotoCapture}
+        title="Photo de récupération"
+        subtitle="Prenez une photo des articles récupérés"
+        confirmButtonText="Confirmer la récupération"
+        type="pickup"
+      />
+
+      {/* Photo Capture Modal - Delivery */}
+      <PhotoCapture
+        visible={showDeliveryPhotoModal}
+        onClose={() => setShowDeliveryPhotoModal(false)}
+        onCapture={handleDeliveryPhotoCapture}
+        title="Photo de livraison"
+        subtitle="Prenez une photo comme preuve de livraison"
+        confirmButtonText="Confirmer la livraison"
+        type="delivery"
+      />
     </View>
   );
 }
