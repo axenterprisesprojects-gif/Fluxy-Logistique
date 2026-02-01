@@ -959,30 +959,46 @@ async def validate_driver(user_id: str, user: User = Depends(require_admin)):
 
 @api_router.get("/admin/businesses")
 async def admin_get_businesses(user: User = Depends(require_admin)):
-    """Get all businesses with delivery stats"""
-    businesses = await db.users.find({"role": "business"}, {"_id": 0}).to_list(500)
+    """Get all businesses with delivery stats using aggregation pipeline"""
+    # Use aggregation pipeline to avoid N+1 queries
+    pipeline = [
+        {"$match": {"role": "business"}},
+        {"$lookup": {
+            "from": "delivery_requests",
+            "localField": "user_id",
+            "foreignField": "business_id",
+            "as": "deliveries"
+        }},
+        {"$addFields": {
+            "stats": {
+                "total_deliveries": {"$size": "$deliveries"},
+                "pending": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$eq": ["$$this.status", "pending"]}
+                }}},
+                "in_progress": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$in": ["$$this.status", ["accepted", "pickup_confirmed"]]}
+                }}},
+                "completed": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$eq": ["$$this.status", "delivered"]}
+                }}},
+                "total_spent": {"$sum": {
+                    "$map": {
+                        "input": {"$filter": {
+                            "input": "$deliveries",
+                            "cond": {"$eq": ["$$this.status", "delivered"]}
+                        }},
+                        "in": "$$this.total_price"
+                    }
+                }}
+            }
+        }},
+        {"$project": {"_id": 0, "deliveries": 0, "password_hash": 0}}
+    ]
     
-    # Add delivery stats for each business
-    for business in businesses:
-        deliveries = await db.delivery_requests.find(
-            {"business_id": business["user_id"]}, 
-            {"_id": 0}
-        ).to_list(1000)
-        
-        total_deliveries = len(deliveries)
-        pending = len([d for d in deliveries if d.get("status") == "pending"])
-        in_progress = len([d for d in deliveries if d.get("status") in ["accepted", "pickup_confirmed"]])
-        completed = len([d for d in deliveries if d.get("status") == "delivered"])
-        total_spent = sum(d.get("total_price", 0) for d in deliveries if d.get("status") == "delivered")
-        
-        business["stats"] = {
-            "total_deliveries": total_deliveries,
-            "pending": pending,
-            "in_progress": in_progress,
-            "completed": completed,
-            "total_spent": total_spent
-        }
-    
+    businesses = await db.users.aggregate(pipeline).to_list(500)
     return businesses
 
 @api_router.get("/admin/businesses/{business_id}")
