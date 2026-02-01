@@ -89,13 +89,18 @@ export default function DriverHome() {
 
   // Handle pickup confirmation
   const handleConfirmPickup = async () => {
+    // Open photo capture modal
+    setShowPickupPhotoModal(true);
+  };
+
+  // Handle pickup photo captured
+  const handlePickupPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
     try {
       setProcessingAction(true);
-      const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
-      await confirmPickup(currentActiveJob.delivery_id, dummyPhoto);
+      await confirmPickup(currentActiveJob.delivery_id, photo);
       if (Platform.OS === 'web') {
-        window.alert('Commande récupérée !');
+        window.alert('Commande récupérée avec succès !');
       }
       await loadData();
     } catch (error: any) {
@@ -109,11 +114,16 @@ export default function DriverHome() {
 
   // Handle delivery confirmation  
   const handleConfirmDelivery = async () => {
+    // Open photo capture modal
+    setShowDeliveryPhotoModal(true);
+  };
+
+  // Handle delivery photo captured
+  const handleDeliveryPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
     try {
       setProcessingAction(true);
-      const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
-      await confirmDelivery(currentActiveJob.delivery_id, dummyPhoto);
+      await confirmDelivery(currentActiveJob.delivery_id, photo);
       if (Platform.OS === 'web') {
         window.alert('Livraison terminée ! Félicitations !');
       }
