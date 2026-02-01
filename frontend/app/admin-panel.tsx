@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -36,6 +36,9 @@ export default function AdminPanel() {
   const [pricingRules, setPricingRules] = useState<any[]>([]);
   const [commission, setCommission] = useState(15);
   const [newCommission, setNewCommission] = useState('15');
+  
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('all');
   
   // Business detail modal
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
@@ -77,7 +80,11 @@ export default function AdminPanel() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      if (Platform.OS === 'web') {
+        window.alert('Veuillez remplir tous les champs');
+      } else {
+        Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      }
       return;
     }
     
@@ -101,7 +108,11 @@ export default function AdminPanel() {
       setIsAuthenticated(true);
       loadData(data.session_token);
     } catch (e: any) {
-      Alert.alert('Erreur', e.message || 'Erreur de connexion');
+      if (Platform.OS === 'web') {
+        window.alert(e.message || 'Erreur de connexion');
+      } else {
+        Alert.alert('Erreur', e.message || 'Erreur de connexion');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -150,7 +161,11 @@ export default function AdminPanel() {
       });
       if (res.ok) {
         loadData(sessionToken);
-        Alert.alert('Succès', 'Chauffeur validé');
+        if (Platform.OS === 'web') {
+          window.alert('Chauffeur validé');
+        } else {
+          Alert.alert('Succès', 'Chauffeur validé');
+        }
       }
     } catch (e) {
       console.error(e);
@@ -161,7 +176,11 @@ export default function AdminPanel() {
     if (!sessionToken) return;
     const value = parseFloat(newCommission);
     if (isNaN(value) || value < 0 || value > 100) {
-      Alert.alert('Erreur', 'Valeur invalide (0-100)');
+      if (Platform.OS === 'web') {
+        window.alert('Valeur invalide (0-100)');
+      } else {
+        Alert.alert('Erreur', 'Valeur invalide (0-100)');
+      }
       return;
     }
     try {
@@ -171,7 +190,11 @@ export default function AdminPanel() {
       });
       if (res.ok) {
         setCommission(value);
-        Alert.alert('Succès', 'Commission mise à jour');
+        if (Platform.OS === 'web') {
+          window.alert('Commission mise à jour');
+        } else {
+          Alert.alert('Succès', 'Commission mise à jour');
+        }
       }
     } catch (e) {
       console.error(e);
@@ -239,6 +262,21 @@ export default function AdminPanel() {
       minute: '2-digit' 
     });
   };
+
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  // Filter deliveries
+  const filteredDeliveries = statusFilter === 'all' 
+    ? deliveries 
+    : deliveries.filter(d => d.status === statusFilter);
 
   if (loading) {
     return (
@@ -324,7 +362,6 @@ export default function AdminPanel() {
         {[
           { id: 'dashboard', icon: 'analytics', label: 'Tableau de bord' },
           { id: 'businesses', icon: 'storefront', label: 'Boutiques' },
-          { id: 'deliveries', icon: 'cube', label: 'Livraisons' },
           { id: 'drivers', icon: 'people', label: 'Chauffeurs' },
           { id: 'pricing', icon: 'pricetag', label: 'Tarification' },
         ].map((tab) => (
@@ -351,7 +388,6 @@ export default function AdminPanel() {
           <Text style={styles.pageTitle}>
             {activeTab === 'dashboard' ? 'Tableau de bord' : 
              activeTab === 'businesses' ? 'Boutiques partenaires' :
-             activeTab === 'deliveries' ? 'Livraisons' : 
              activeTab === 'drivers' ? 'Chauffeurs' : 'Tarification'}
           </Text>
           <View style={styles.headerRight}>
@@ -362,9 +398,10 @@ export default function AdminPanel() {
           </View>
         </View>
 
-        {/* Dashboard Tab */}
+        {/* Dashboard Tab - Now with deliveries table */}
         {activeTab === 'dashboard' && (
           <View>
+            {/* KPI Cards */}
             <View style={styles.statsGrid}>
               <View style={[styles.statCard, { borderLeftColor: COLORS.primary }]}>
                 <Text style={styles.statLabel}>Total livraisons</Text>
@@ -374,23 +411,110 @@ export default function AdminPanel() {
                 <Text style={styles.statLabel}>En attente</Text>
                 <Text style={styles.statValue}>{stats?.deliveries?.pending || 0}</Text>
               </View>
+              <View style={[styles.statCard, { borderLeftColor: COLORS.purple }]}>
+                <Text style={styles.statLabel}>En cours</Text>
+                <Text style={styles.statValue}>{stats?.deliveries?.active || 0}</Text>
+              </View>
               <View style={[styles.statCard, { borderLeftColor: COLORS.secondary }]}>
                 <Text style={styles.statLabel}>Livrées</Text>
                 <Text style={styles.statValue}>{stats?.deliveries?.completed || 0}</Text>
-              </View>
-              <View style={[styles.statCard, { borderLeftColor: COLORS.purple }]}>
-                <Text style={styles.statLabel}>Boutiques</Text>
-                <Text style={styles.statValue}>{businesses.length}</Text>
               </View>
               <View style={[styles.statCard, { borderLeftColor: '#3B82F6' }]}>
                 <Text style={styles.statLabel}>Chauffeurs</Text>
                 <Text style={styles.statValue}>{stats?.drivers?.total || 0}</Text>
               </View>
+              <View style={[styles.statCard, { borderLeftColor: '#EC4899' }]}>
+                <Text style={styles.statLabel}>Revenus</Text>
+                <Text style={styles.statValue}>{(stats?.revenue?.total_commission || 0).toLocaleString()} F</Text>
+              </View>
             </View>
-            
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Revenus (Commissions)</Text>
-              <Text style={styles.revenueValue}>{(stats?.revenue?.total_commission || 0).toLocaleString()} F</Text>
+
+            {/* Filter Tabs */}
+            <View style={styles.filterContainer}>
+              {[
+                { id: 'all', label: 'Toutes' },
+                { id: 'pending', label: 'En attente' },
+                { id: 'accepted', label: 'Acceptées' },
+                { id: 'pickup_confirmed', label: 'Récupérées' },
+                { id: 'delivered', label: 'Livrées' },
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.id}
+                  style={[styles.filterTab, statusFilter === filter.id && styles.filterTabActive]}
+                  onPress={() => setStatusFilter(filter.id)}
+                >
+                  <Text style={[styles.filterTabText, statusFilter === filter.id && styles.filterTabTextActive]}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Deliveries Table */}
+            <View style={styles.tableCard}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableTitle}>Liste des livraisons ({filteredDeliveries.length})</Text>
+                <TouchableOpacity style={styles.refreshBtn} onPress={() => sessionToken && loadData(sessionToken)}>
+                  <Ionicons name="refresh" size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Table Header */}
+              <View style={styles.tableRow}>
+                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Commerce</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Articles</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Montant</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Commission</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Chauffeur</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Date</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Statut</Text>
+              </View>
+
+              {/* Table Body */}
+              {filteredDeliveries.length === 0 ? (
+                <View style={styles.emptyTable}>
+                  <Ionicons name="cube-outline" size={48} color={COLORS.gray[300]} />
+                  <Text style={styles.emptyText}>Aucune livraison</Text>
+                </View>
+              ) : (
+                filteredDeliveries.map((d) => (
+                  <TouchableOpacity 
+                    key={d.delivery_id} 
+                    style={styles.tableDataRow}
+                    onPress={() => openDeliveryDetail(d)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.tableCell, { flex: 1.5 }]}>
+                      <Text style={styles.tableCellPrimary}>{d.business_name}</Text>
+                      <Text style={styles.tableCellSecondary}>{d.delivery_code}</Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 2 }]}>
+                      <Text style={styles.tableCellText} numberOfLines={2}>
+                        {d.item_description || d.item_type || '-'}
+                      </Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 1 }]}>
+                      <Text style={styles.tableCellAmount}>{d.total_price?.toLocaleString()} F</Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 0.8 }]}>
+                      <Text style={styles.tableCellCommission}>{d.commission?.toLocaleString()} F</Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 1.2 }]}>
+                      <Text style={styles.tableCellText}>{d.driver_name || '-'}</Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 1 }]}>
+                      <Text style={styles.tableCellDate}>{formatShortDate(d.created_at)}</Text>
+                    </View>
+                    <View style={[styles.tableCell, { flex: 1 }]}>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(d.status).bg }]}>
+                        <Text style={[styles.statusText, { color: getStatusColor(d.status).text }]}>
+                          {getStatusLabel(d.status)}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           </View>
         )}
@@ -459,39 +583,6 @@ export default function AdminPanel() {
                 ))
               )}
             </View>
-          </View>
-        )}
-
-        {/* Deliveries Tab */}
-        {activeTab === 'deliveries' && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Toutes les livraisons ({deliveries.length})</Text>
-            {deliveries.length === 0 ? (
-              <Text style={styles.emptyText}>Aucune livraison</Text>
-            ) : (
-              deliveries.map((d) => (
-                <TouchableOpacity 
-                  key={d.delivery_id} 
-                  style={styles.listItem}
-                  onPress={() => openDeliveryDetail(d)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.listItemMain}>
-                    <Text style={styles.listItemTitle}>{d.item_description || d.item_type}</Text>
-                    <Text style={styles.listItemSub}>{d.business_name} → {d.destination_area}</Text>
-                    <Text style={styles.listItemDate}>{formatDate(d.created_at)}</Text>
-                  </View>
-                  <View style={styles.listItemRight}>
-                    <Text style={styles.listItemPrice}>{d.total_price?.toLocaleString()} F</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(d.status).bg }]}>
-                      <Text style={[styles.statusText, { color: getStatusColor(d.status).text }]}>
-                        {getStatusLabel(d.status)}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
           </View>
         )}
 
@@ -686,7 +777,12 @@ export default function AdminPanel() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Détails de la livraison</Text>
+              <View>
+                <Text style={styles.modalTitle}>Détails de la livraison</Text>
+                {selectedDelivery && (
+                  <Text style={styles.modalSubtitle}>Code: {selectedDelivery.delivery_code}</Text>
+                )}
+              </View>
               <TouchableOpacity onPress={() => setDeliveryModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.gray[600]} />
               </TouchableOpacity>
@@ -709,42 +805,37 @@ export default function AdminPanel() {
                   </Text>
                 </View>
 
-                {/* Details */}
-                <View style={styles.deliveryDetailSection}>
-                  <View style={styles.deliveryDetailRow}>
-                    <Ionicons name="storefront" size={18} color={COLORS.purple} />
-                    <View style={styles.deliveryDetailContent}>
-                      <Text style={styles.deliveryDetailLabel}>Boutique</Text>
-                      <Text style={styles.deliveryDetailValue}>{selectedDelivery.business_name}</Text>
-                    </View>
+                {/* Details Grid */}
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailBox}>
+                    <Ionicons name="storefront" size={20} color={COLORS.purple} />
+                    <Text style={styles.detailBoxLabel}>Commerce</Text>
+                    <Text style={styles.detailBoxValue}>{selectedDelivery.business_name}</Text>
+                  </View>
+                  <View style={styles.detailBox}>
+                    <Ionicons name="person" size={20} color={COLORS.gray[500]} />
+                    <Text style={styles.detailBoxLabel}>Client</Text>
+                    <Text style={styles.detailBoxValue}>{selectedDelivery.customer_name || '-'}</Text>
+                    {selectedDelivery.customer_phone && (
+                      <Text style={styles.detailBoxSub}>{selectedDelivery.customer_phone}</Text>
+                    )}
                   </View>
                 </View>
 
-                <View style={styles.deliveryDetailSection}>
-                  <View style={styles.deliveryDetailRow}>
-                    <Ionicons name="person" size={18} color={COLORS.gray[500]} />
-                    <View style={styles.deliveryDetailContent}>
-                      <Text style={styles.deliveryDetailLabel}>Client</Text>
-                      <Text style={styles.deliveryDetailValue}>{selectedDelivery.customer_name}</Text>
-                      {selectedDelivery.customer_phone && (
-                        <Text style={styles.deliveryDetailSub}>{selectedDelivery.customer_phone}</Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
+                {/* Articles */}
                 <View style={styles.deliveryDetailSection}>
                   <View style={styles.deliveryDetailRow}>
                     <Ionicons name="cube" size={18} color={COLORS.gray[500]} />
                     <View style={styles.deliveryDetailContent}>
                       <Text style={styles.deliveryDetailLabel}>Articles</Text>
                       <Text style={styles.deliveryDetailValue}>
-                        {selectedDelivery.item_description || selectedDelivery.item_type}
+                        {selectedDelivery.item_description || selectedDelivery.item_type || '-'}
                       </Text>
                     </View>
                   </View>
                 </View>
 
+                {/* Route */}
                 <View style={styles.deliveryDetailSection}>
                   <View style={styles.deliveryDetailRow}>
                     <Ionicons name="location" size={18} color={COLORS.primary} />
@@ -762,6 +853,7 @@ export default function AdminPanel() {
                   </View>
                 </View>
 
+                {/* Driver */}
                 {selectedDelivery.driver_name && (
                   <View style={styles.deliveryDetailSection}>
                     <View style={styles.deliveryDetailRow}>
@@ -774,35 +866,70 @@ export default function AdminPanel() {
                   </View>
                 )}
 
-                {/* Timestamps */}
-                <View style={styles.deliveryDetailSection}>
-                  <Text style={styles.deliveryTimestampTitle}>Chronologie</Text>
-                  <View style={styles.deliveryTimestampRow}>
-                    <View style={[styles.deliveryTimestampDot, { backgroundColor: COLORS.gray[400] }]} />
-                    <Text style={styles.deliveryTimestampLabel}>Créée:</Text>
-                    <Text style={styles.deliveryTimestampValue}>{formatDate(selectedDelivery.created_at)}</Text>
+                {/* Timeline / Chronology */}
+                <View style={styles.timelineSection}>
+                  <Text style={styles.timelineTitle}>Chronologie</Text>
+                  
+                  <View style={styles.timelineContainer}>
+                    {/* Created */}
+                    <View style={styles.timelineItem}>
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: COLORS.gray[400] }]} />
+                        <View style={styles.timelineLine} />
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <Text style={styles.timelineLabel}>Créée</Text>
+                        <Text style={styles.timelineDate}>{formatDate(selectedDelivery.created_at)}</Text>
+                      </View>
+                    </View>
+
+                    {/* Accepted */}
+                    <View style={styles.timelineItem}>
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: selectedDelivery.accepted_at ? COLORS.primary : COLORS.gray[200] }]} />
+                        <View style={styles.timelineLine} />
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <Text style={[styles.timelineLabel, !selectedDelivery.accepted_at && styles.timelineLabelInactive]}>
+                          Acceptée par chauffeur
+                        </Text>
+                        <Text style={styles.timelineDate}>
+                          {selectedDelivery.accepted_at ? formatDate(selectedDelivery.accepted_at) : '-'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Pickup Confirmed */}
+                    <View style={styles.timelineItem}>
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: selectedDelivery.pickup_at ? COLORS.purple : COLORS.gray[200] }]} />
+                        <View style={styles.timelineLine} />
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <Text style={[styles.timelineLabel, !selectedDelivery.pickup_at && styles.timelineLabelInactive]}>
+                          Colis récupéré
+                        </Text>
+                        <Text style={styles.timelineDate}>
+                          {selectedDelivery.pickup_at ? formatDate(selectedDelivery.pickup_at) : '-'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Delivered */}
+                    <View style={[styles.timelineItem, { marginBottom: 0 }]}>
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: selectedDelivery.delivered_at ? COLORS.secondary : COLORS.gray[200] }]} />
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <Text style={[styles.timelineLabel, !selectedDelivery.delivered_at && styles.timelineLabelInactive]}>
+                          Livré au client
+                        </Text>
+                        <Text style={styles.timelineDate}>
+                          {selectedDelivery.delivered_at ? formatDate(selectedDelivery.delivered_at) : '-'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  {selectedDelivery.accepted_at && (
-                    <View style={styles.deliveryTimestampRow}>
-                      <View style={[styles.deliveryTimestampDot, { backgroundColor: COLORS.primary }]} />
-                      <Text style={styles.deliveryTimestampLabel}>Acceptée:</Text>
-                      <Text style={styles.deliveryTimestampValue}>{formatDate(selectedDelivery.accepted_at)}</Text>
-                    </View>
-                  )}
-                  {selectedDelivery.pickup_at && (
-                    <View style={styles.deliveryTimestampRow}>
-                      <View style={[styles.deliveryTimestampDot, { backgroundColor: COLORS.purple }]} />
-                      <Text style={styles.deliveryTimestampLabel}>Récupérée:</Text>
-                      <Text style={styles.deliveryTimestampValue}>{formatDate(selectedDelivery.pickup_at)}</Text>
-                    </View>
-                  )}
-                  {selectedDelivery.delivered_at && (
-                    <View style={styles.deliveryTimestampRow}>
-                      <View style={[styles.deliveryTimestampDot, { backgroundColor: COLORS.secondary }]} />
-                      <Text style={styles.deliveryTimestampLabel}>Livrée:</Text>
-                      <Text style={styles.deliveryTimestampValue}>{formatDate(selectedDelivery.delivered_at)}</Text>
-                    </View>
-                  )}
                 </View>
 
                 {/* Financial Breakdown */}
@@ -813,12 +940,15 @@ export default function AdminPanel() {
                     <Text style={styles.deliveryFinancialValue}>{selectedDelivery.total_price?.toLocaleString()} F</Text>
                   </View>
                   <View style={styles.deliveryFinancialRow}>
-                    <Text style={styles.deliveryFinancialLabel}>Commission ({selectedDelivery.commission_percentage || 15}%)</Text>
-                    <Text style={styles.deliveryFinancialValue}>{selectedDelivery.commission?.toLocaleString()} F</Text>
+                    <Text style={styles.deliveryFinancialLabel}>Commission plateforme</Text>
+                    <Text style={[styles.deliveryFinancialValue, { color: COLORS.error }]}>
+                      -{selectedDelivery.commission?.toLocaleString()} F
+                    </Text>
                   </View>
+                  <View style={styles.financialDivider} />
                   <View style={styles.deliveryFinancialRow}>
-                    <Text style={styles.deliveryFinancialLabel}>Gains chauffeur</Text>
-                    <Text style={[styles.deliveryFinancialValue, { color: COLORS.secondary }]}>
+                    <Text style={styles.deliveryFinancialLabelBold}>Gains chauffeur</Text>
+                    <Text style={[styles.deliveryFinancialValueBold, { color: COLORS.secondary }]}>
                       {selectedDelivery.driver_earnings?.toLocaleString()} F
                     </Text>
                   </View>
@@ -865,7 +995,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', backgroundColor: COLORS.gray[100] },
   sidebar: { width: 220, backgroundColor: COLORS.white, padding: 20, borderRightWidth: 1, borderRightColor: COLORS.gray[200] },
   sidebarLogo: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 },
-  sidebarTitle: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
+  sidebarTitle: { fontSize: 18, fontWeight: '700', color: COLORS.primary },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, marginBottom: 4 },
   navItemActive: { backgroundColor: '#EEF2FF' },
   navText: { fontSize: 14, color: COLORS.gray[500], fontWeight: '500' },
@@ -880,20 +1010,43 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 24 },
   statCard: { flex: 1, minWidth: 140, backgroundColor: COLORS.white, borderRadius: 12, padding: 16, borderLeftWidth: 4 },
   statLabel: { fontSize: 13, color: COLORS.gray[500], marginBottom: 4 },
-  statValue: { fontSize: 28, fontWeight: '700', color: COLORS.gray[900] },
+  statValue: { fontSize: 24, fontWeight: '700', color: COLORS.gray[900] },
   card: { backgroundColor: COLORS.white, borderRadius: 12, padding: 20, marginBottom: 16 },
   cardTitle: { fontSize: 17, fontWeight: '600', color: COLORS.gray[900], marginBottom: 16 },
-  revenueValue: { fontSize: 32, fontWeight: '700', color: COLORS.secondary },
-  emptyText: { fontSize: 14, color: COLORS.gray[400], fontStyle: 'italic' },
+  emptyText: { fontSize: 14, color: COLORS.gray[400], fontStyle: 'italic', textAlign: 'center', paddingVertical: 20 },
+
+  // Filter tabs
+  filterContainer: { flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 12, padding: 6, marginBottom: 16 },
+  filterTab: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
+  filterTabActive: { backgroundColor: COLORS.primary },
+  filterTabText: { fontSize: 13, fontWeight: '500', color: COLORS.gray[500] },
+  filterTabTextActive: { color: COLORS.white },
+
+  // Table styles
+  tableCard: { backgroundColor: COLORS.white, borderRadius: 12, padding: 20, marginBottom: 16 },
+  tableHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  tableTitle: { fontSize: 17, fontWeight: '600', color: COLORS.gray[900] },
+  refreshBtn: { padding: 8, backgroundColor: COLORS.gray[50], borderRadius: 8 },
+  tableRow: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: COLORS.gray[200] },
+  tableHeaderCell: { fontSize: 12, fontWeight: '600', color: COLORS.gray[500], textTransform: 'uppercase', letterSpacing: 0.5 },
+  tableDataRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.gray[100], alignItems: 'center' },
+  tableCell: { paddingRight: 8 },
+  tableCellText: { fontSize: 13, color: COLORS.gray[700] },
+  tableCellPrimary: { fontSize: 13, fontWeight: '600', color: COLORS.gray[900] },
+  tableCellSecondary: { fontSize: 11, color: COLORS.gray[400], marginTop: 2 },
+  tableCellAmount: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
+  tableCellCommission: { fontSize: 12, color: COLORS.secondary, fontWeight: '500' },
+  tableCellDate: { fontSize: 12, color: COLORS.gray[500] },
+  emptyTable: { alignItems: 'center', paddingVertical: 40 },
+
+  // List styles
   listItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.gray[100] },
   listItemMain: { flex: 1 },
   listItemTitle: { fontSize: 15, fontWeight: '600', color: COLORS.gray[900] },
   listItemSub: { fontSize: 13, color: COLORS.gray[500], marginTop: 2 },
-  listItemDate: { fontSize: 12, color: COLORS.gray[400], marginTop: 4 },
   listItemRight: { alignItems: 'flex-end' },
-  listItemPrice: { fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 4 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 12, fontWeight: '500' },
+  statusText: { fontSize: 11, fontWeight: '600' },
   validateBtn: { backgroundColor: COLORS.secondary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
   validateBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '600' },
   commissionValue: { fontSize: 48, fontWeight: '700', color: COLORS.warning, marginBottom: 16 },
@@ -919,8 +1072,9 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: COLORS.white, borderRadius: 16, width: '100%', maxWidth: 600, maxHeight: '90%', padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.gray[900] },
+  modalSubtitle: { fontSize: 13, color: COLORS.gray[500], marginTop: 4 },
   modalLoading: { padding: 40, alignItems: 'center' },
   modalBusinessHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   modalBusinessIcon: { width: 64, height: 64, borderRadius: 16, backgroundColor: COLORS.purple, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
@@ -950,22 +1104,41 @@ const styles = StyleSheet.create({
   deliveryPriceSection: { backgroundColor: COLORS.gray[50], borderRadius: 12, padding: 20, alignItems: 'center', marginBottom: 16 },
   deliveryPriceLabel: { fontSize: 14, color: COLORS.gray[500] },
   deliveryPriceValue: { fontSize: 32, fontWeight: '700', color: COLORS.primary, marginTop: 4 },
+  
+  detailsGrid: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  detailBox: { flex: 1, backgroundColor: COLORS.gray[50], borderRadius: 12, padding: 14, alignItems: 'center' },
+  detailBoxLabel: { fontSize: 11, color: COLORS.gray[500], marginTop: 8, textTransform: 'uppercase' },
+  detailBoxValue: { fontSize: 14, fontWeight: '600', color: COLORS.gray[800], marginTop: 4, textAlign: 'center' },
+  detailBoxSub: { fontSize: 12, color: COLORS.gray[500], marginTop: 2 },
+  
   deliveryDetailSection: { backgroundColor: COLORS.gray[50], borderRadius: 12, padding: 16, marginBottom: 12 },
   deliveryDetailRow: { flexDirection: 'row', alignItems: 'flex-start' },
   deliveryDetailContent: { marginLeft: 12, flex: 1 },
   deliveryDetailLabel: { fontSize: 11, color: COLORS.gray[500], textTransform: 'uppercase', letterSpacing: 0.5 },
   deliveryDetailValue: { fontSize: 14, fontWeight: '600', color: COLORS.gray[800], marginTop: 2 },
-  deliveryDetailSub: { fontSize: 13, color: COLORS.gray[500], marginTop: 2 },
-  deliveryTimestampTitle: { fontSize: 13, fontWeight: '600', color: COLORS.gray[700], marginBottom: 12 },
-  deliveryTimestampRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  deliveryTimestampDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
-  deliveryTimestampLabel: { fontSize: 12, color: COLORS.gray[500], width: 80 },
-  deliveryTimestampValue: { fontSize: 12, color: COLORS.gray[700], flex: 1 },
+  
+  // Timeline styles
+  timelineSection: { backgroundColor: COLORS.gray[50], borderRadius: 12, padding: 16, marginBottom: 12 },
+  timelineTitle: { fontSize: 13, fontWeight: '600', color: COLORS.gray[700], marginBottom: 16 },
+  timelineContainer: {},
+  timelineItem: { flexDirection: 'row', marginBottom: 16 },
+  timelineLeft: { width: 24, alignItems: 'center' },
+  timelineDot: { width: 12, height: 12, borderRadius: 6 },
+  timelineLine: { width: 2, flex: 1, backgroundColor: COLORS.gray[200], marginTop: 4 },
+  timelineContent: { flex: 1, marginLeft: 12, paddingBottom: 4 },
+  timelineLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray[800] },
+  timelineLabelInactive: { color: COLORS.gray[400] },
+  timelineDate: { fontSize: 12, color: COLORS.gray[500], marginTop: 2 },
+  
   deliveryFinancialSection: { backgroundColor: COLORS.gray[50], borderRadius: 12, padding: 16, marginBottom: 16 },
   deliveryFinancialTitle: { fontSize: 13, fontWeight: '600', color: COLORS.gray[700], marginBottom: 12 },
   deliveryFinancialRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
   deliveryFinancialLabel: { fontSize: 13, color: COLORS.gray[600] },
   deliveryFinancialValue: { fontSize: 13, fontWeight: '600', color: COLORS.gray[800] },
+  deliveryFinancialLabelBold: { fontSize: 14, fontWeight: '600', color: COLORS.gray[800] },
+  deliveryFinancialValueBold: { fontSize: 16, fontWeight: '700' },
+  financialDivider: { height: 1, backgroundColor: COLORS.gray[200], marginVertical: 8 },
+  
   modalCloseBtn: { backgroundColor: COLORS.gray[100], borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 20 },
   modalCloseBtnText: { fontSize: 15, fontWeight: '600', color: COLORS.gray[700] },
 });
