@@ -8,6 +8,7 @@ import { useApi } from '../../src/hooks/useApi';
 import Card from '../../src/components/Card';
 import SwipeToAccept from '../../src/components/SwipeToAccept';
 import Button from '../../src/components/Button';
+import PhotoCapture from '../../src/components/PhotoCapture';
 import { COLORS, SHADOWS } from '../../src/constants/theme';
 
 const FILTERS = [
