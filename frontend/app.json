@@ -1,13 +1,18 @@
 {
   "expo": {
     "name": "Fluxy Logistique",
-    "slug": "fluxy-logistique",
+    "slug": "heavy-movers",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "4b4de3a0-a581-425a-a9b8-3fc2e1ff96aa"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fluxy.logistique",
