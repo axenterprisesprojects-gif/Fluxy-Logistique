@@ -1,112 +1,117 @@
 diff --git a/model.patch b/model.patch
-index 350b7d1..e69de29 100644
+index 9ab011f..e69de29 100644
 --- a/model.patch
 +++ b/model.patch
-@@ -1,107 +0,0 @@
+@@ -1,112 +0,0 @@
 -diff --git a/model.patch b/model.patch
--index 24b9edb..e69de29 100644
+-index 350b7d1..e69de29 100644
 ---- a/model.patch
 -+++ b/model.patch
--@@ -1,102 +0,0 @@
+-@@ -1,107 +0,0 @@
 --diff --git a/model.patch b/model.patch
---index a6e22de..e69de29 100644
+--index 24b9edb..e69de29 100644
 ----- a/model.patch
 --+++ b/model.patch
---@@ -1,97 +0,0 @@
----diff --git a/backend/server.py b/backend/server.py
----index 6846de7..9f240ed 100644
------- a/backend/server.py
----+++ b/backend/server.py
----@@ -567,6 +567,17 @@ async def admin_login(data: BusinessLoginRequest, response: Response):
----         "created_at": datetime.now(timezone.utc)
----     })
----     
----+    # Set cookie
----+    response.set_cookie(
----+        key="session_token",
----+        value=session_token,
----+        httponly=True,
----+        secure=True,
----+        samesite="none",
----+        path="/",
----+        max_age=7 * 24 * 60 * 60
----+    )
----+    
----     # Return user without password
----     user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
----     
----diff --git a/test_result.md b/test_result.md
----index a9c1af2..3ac9f47 100644
------- a/test_result.md
----+++ b/test_result.md
----@@ -116,6 +116,9 @@ backend:
----       - working: true
----         agent: "main"
----         comment: "Driver login with phone number works correctly"
----+      - working: true
----+        agent: "testing"
----+        comment: "✅ TESTED: Driver login with phone +241 07 00 00 01 and name 'Test Chauffeur' works perfectly. Creates session token and returns user data correctly."
----   
----   - task: "Business delivery creation"
----     implemented: true
----@@ -128,6 +131,9 @@ backend:
----       - working: true
----         agent: "main"
----         comment: "Delivery creation with distance calculation and pricing works"
----+      - working: true
----+        agent: "testing"
----+        comment: "✅ TESTED: Business login (newtest@business.com) and delivery creation works perfectly. Created delivery with customer 'Jean Dupont', items '3 fauteuils, 1 armoire', destination 'Akanda, Libreville'. Generated delivery_code QH2F5B3B and calculated price 35000 F correctly."
----   
----   - task: "Driver job acceptance"
----     implemented: true
----@@ -140,6 +146,9 @@ backend:
----       - working: true
----         agent: "main"
----         comment: "Job acceptance with first-come-first-serve works"
----+      - working: true
----+        agent: "testing"
----+        comment: "✅ TESTED: Complete job flow works - driver can see available jobs, delivery appears in list with correct details, and driver can accept job successfully. Status changes to 'accepted' and driver info is recorded."
----   
----   - task: "Admin dashboard and driver validation"
----     implemented: true
----@@ -152,6 +161,9 @@ backend:
----       - working: true
----         agent: "main"
----         comment: "Admin endpoints for dashboard, pricing and validation work"
----+      - working: true
----+        agent: "testing"
----+        comment: "✅ TESTED: Admin login (admin@quickhaul.com) works after fixing missing cookie setting. Dashboard shows correct stats (7 total deliveries, 4 pending, 3 active). Admin can view all deliveries and see accepted delivery with driver details. FIXED: Added missing cookie setting in admin login endpoint."
----   
----   - task: "Pricing rules management"
----     implemented: true
----@@ -164,6 +176,9 @@ backend:
----       - working: true
----         agent: "main"
----         comment: "CRUD for pricing rules and commission works"
----+      - working: true
----+        agent: "testing"
----+        comment: "✅ TESTED: Pricing calculation works correctly - 5-10km distance calculated 35000 F price automatically during delivery creation."
---- 
---- frontend:
----   - task: "Landing page with role selection"
----@@ -214,8 +229,8 @@ metadata:
---- 
---- test_plan:
----   current_focus:
-----    - "Backend API testing completed"
-----    - "Frontend UI needs visual testing"
----+    - "Backend API testing completed successfully"
----+    - "All delivery flow scenarios working"
----   stuck_tasks: []
----   test_all: false
----   test_priority: "high_first"
----@@ -224,4 +239,6 @@ agent_communication:
----   - agent: "main"
----     message: "Backend API fully tested via curl. All endpoints working: driver login, business delivery creation, job acceptance, admin dashboard, pricing management. Frontend screens created but needs visual testing."
----   - agent: "main"
-----    message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
----\ No newline at end of file
----+    message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
----+  - agent: "testing"
----+    message: "✅ COMPLETE DELIVERY FLOW TESTED SUCCESSFULLY: All 8 test scenarios passed. Business login → delivery creation → driver login → job listing → job acceptance → admin dashboard → admin deliveries all working perfectly. Fixed admin login cookie issue during testing. Backend APIs are fully functional and ready for production use."
----\ No newline at end of file
+--@@ -1,102 +0,0 @@
+---diff --git a/model.patch b/model.patch
+---index a6e22de..e69de29 100644
+------ a/model.patch
+---+++ b/model.patch
+---@@ -1,97 +0,0 @@
+----diff --git a/backend/server.py b/backend/server.py
+----index 6846de7..9f240ed 100644
+------- a/backend/server.py
+----+++ b/backend/server.py
+----@@ -567,6 +567,17 @@ async def admin_login(data: BusinessLoginRequest, response: Response):
+----         "created_at": datetime.now(timezone.utc)
+----     })
+----     
+----+    # Set cookie
+----+    response.set_cookie(
+----+        key="session_token",
+----+        value=session_token,
+----+        httponly=True,
+----+        secure=True,
+----+        samesite="none",
+----+        path="/",
+----+        max_age=7 * 24 * 60 * 60
+----+    )
+----+    
+----     # Return user without password
+----     user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+----     
+----diff --git a/test_result.md b/test_result.md
+----index a9c1af2..3ac9f47 100644
+------- a/test_result.md
+----+++ b/test_result.md
+----@@ -116,6 +116,9 @@ backend:
+----       - working: true
+----         agent: "main"
+----         comment: "Driver login with phone number works correctly"
+----+      - working: true
+----+        agent: "testing"
+----+        comment: "✅ TESTED: Driver login with phone +241 07 00 00 01 and name 'Test Chauffeur' works perfectly. Creates session token and returns user data correctly."
+----   
+----   - task: "Business delivery creation"
+----     implemented: true
+----@@ -128,6 +131,9 @@ backend:
+----       - working: true
+----         agent: "main"
+----         comment: "Delivery creation with distance calculation and pricing works"
+----+      - working: true
+----+        agent: "testing"
+----+        comment: "✅ TESTED: Business login (newtest@business.com) and delivery creation works perfectly. Created delivery with customer 'Jean Dupont', items '3 fauteuils, 1 armoire', destination 'Akanda, Libreville'. Generated delivery_code QH2F5B3B and calculated price 35000 F correctly."
+----   
+----   - task: "Driver job acceptance"
+----     implemented: true
+----@@ -140,6 +146,9 @@ backend:
+----       - working: true
+----         agent: "main"
+----         comment: "Job acceptance with first-come-first-serve works"
+----+      - working: true
+----+        agent: "testing"
+----+        comment: "✅ TESTED: Complete job flow works - driver can see available jobs, delivery appears in list with correct details, and driver can accept job successfully. Status changes to 'accepted' and driver info is recorded."
+----   
+----   - task: "Admin dashboard and driver validation"
+----     implemented: true
+----@@ -152,6 +161,9 @@ backend:
+----       - working: true
+----         agent: "main"
+----         comment: "Admin endpoints for dashboard, pricing and validation work"
+----+      - working: true
+----+        agent: "testing"
+----+        comment: "✅ TESTED: Admin login (admin@quickhaul.com) works after fixing missing cookie setting. Dashboard shows correct stats (7 total deliveries, 4 pending, 3 active). Admin can view all deliveries and see accepted delivery with driver details. FIXED: Added missing cookie setting in admin login endpoint."
+----   
+----   - task: "Pricing rules management"
+----     implemented: true
+----@@ -164,6 +176,9 @@ backend:
+----       - working: true
+----         agent: "main"
+----         comment: "CRUD for pricing rules and commission works"
+----+      - working: true
+----+        agent: "testing"
+----+        comment: "✅ TESTED: Pricing calculation works correctly - 5-10km distance calculated 35000 F price automatically during delivery creation."
+---- 
+---- frontend:
+----   - task: "Landing page with role selection"
+----@@ -214,8 +229,8 @@ metadata:
+---- 
+---- test_plan:
+----   current_focus:
+-----    - "Backend API testing completed"
+-----    - "Frontend UI needs visual testing"
+----+    - "Backend API testing completed successfully"
+----+    - "All delivery flow scenarios working"
+----   stuck_tasks: []
+----   test_all: false
+----   test_priority: "high_first"
+----@@ -224,4 +239,6 @@ agent_communication:
+----   - agent: "main"
+----     message: "Backend API fully tested via curl. All endpoints working: driver login, business delivery creation, job acceptance, admin dashboard, pricing management. Frontend screens created but needs visual testing."
+----   - agent: "main"
+-----    message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
+----\ No newline at end of file
+----+    message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
+----+  - agent: "testing"
+----+    message: "✅ COMPLETE DELIVERY FLOW TESTED SUCCESSFULLY: All 8 test scenarios passed. Business login → delivery creation → driver login → job listing → job acceptance → admin dashboard → admin deliveries all working perfectly. Fixed admin login cookie issue during testing. Backend APIs are fully functional and ready for production use."
+----\ No newline at end of file
