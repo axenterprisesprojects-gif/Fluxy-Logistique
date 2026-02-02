@@ -1,6 +1,8 @@
 import { useAuth } from '../contexts/AuthContext';
+import Constants from 'expo-constants';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+// Use Constants.expoConfig.extra for production builds, fallback to env for development
+const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export function useApi() {
   const { sessionToken } = useAuth();
