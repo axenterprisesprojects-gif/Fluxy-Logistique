@@ -129,18 +129,17 @@ export default function DriverProfile() {
 
   const handleLogout = async () => {
     try {
+      console.log('Logout initiated...');
       await logout();
-      // Force page reload on web to clear all state
+      console.log('Logout successful, redirecting...');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // ALWAYS redirect, even if logout fails
       if (Platform.OS === 'web') {
         window.location.href = '/';
       } else {
         router.replace('/');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Force redirect anyway
-      if (Platform.OS === 'web') {
-        window.location.href = '/';
       }
     }
   };
