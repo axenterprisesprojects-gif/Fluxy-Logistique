@@ -46,6 +46,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ========================
+# STARTUP INITIALIZATION (Production-Ready)
+# ========================
+@app.on_event("startup")
+async def startup_init():
+    """
+    Initialize default admin account on startup.
+    This ONLY creates accounts if they don't exist - never overwrites existing data.
+    Safe for production use.
+    """
+    logger.info("🚀 Starting Fluxy Logistique Backend...")
+    
+    # Check if admin exists
+    admin_exists = await db.users.find_one({"role": "admin"})
+    if not admin_exists:
+        logger.info("📌 No admin found - creating default admin account...")
+        admin_hash = hash_password("admin123")
+        await db.users.insert_one({
+            "user_id": f"admin_{uuid.uuid4().hex[:8]}",
+            "email": "admin@fluxylogistique.com",
+            "password_hash": admin_hash,
+            "name": "Administrateur",
+            "role": "admin",
+            "is_validated": True,
+            "created_at": datetime.utcnow().isoformat()
+        })
+        logger.info("✅ Default admin created: admin@fluxylogistique.com / admin123")
+    else:
+        logger.info("✅ Admin account exists - skipping initialization")
+    
+    # Log database stats
+    users_count = await db.users.count_documents({})
+    deliveries_count = await db.delivery_requests.count_documents({})
+    logger.info(f"📊 Database stats: {users_count} users, {deliveries_count} deliveries")
+    logger.info("✅ Fluxy Logistique Backend ready!")
+
+# ========================
 # MODELS
 # ========================
 
