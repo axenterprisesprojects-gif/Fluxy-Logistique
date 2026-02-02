@@ -8,6 +8,9 @@
     "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "backendUrl": "https://logistics-launch.preview.emergentagent.com"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fluxy.logistique",
