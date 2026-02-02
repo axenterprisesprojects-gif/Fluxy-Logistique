@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fluxylogistique.app",
+      "bundleIdentifier": "com.fluxy.logistique",
       "infoPlist": {
         "NSCameraUsageDescription": "Pour prendre des photos de livraison",
         "NSPhotoLibraryUsageDescription": "Pour sélectionner des documents"
