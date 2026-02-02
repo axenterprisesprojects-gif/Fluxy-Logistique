@@ -1,18 +1,13 @@
 {
   "expo": {
     "name": "Fluxy Logistique",
-    "slug": "heavy-movers",
-    "version": "1.0.2",
+    "slug": "fluxy-logistique",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "extra": {
-      "eas": {
-        "projectId": "4b4de3a0-a581-425a-a9b8-3fc2e1ff96aa"
-      }
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fluxy.logistique",
@@ -31,7 +26,11 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE"
-      ]
+      ],
+      "statusBar": {
+        "backgroundColor": "#2563EB",
+        "barStyle": "light-content"
+      }
     },
     "web": {
       "bundler": "metro",
