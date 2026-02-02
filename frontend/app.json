@@ -29,11 +29,11 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE"
-      ],
-      "statusBar": {
-        "backgroundColor": "#2563EB",
-        "barStyle": "light-content"
-      }
+      ]
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#2563EB",
+      "barStyle": "light-content"
     },
     "web": {
       "bundler": "metro",
