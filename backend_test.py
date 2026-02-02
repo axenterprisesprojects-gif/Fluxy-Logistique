@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://heavy-movers.preview.emergentagent.com/api"
+BACKEND_URL = "https://logistics-launch.preview.emergentagent.com/api"
 
 class QuickHaulTester:
     def __init__(self):
