@@ -68,6 +68,9 @@ export function useApi() {
       body: JSON.stringify({ photo }) 
     });
 
+  const cancelDelivery = (deliveryId: string) => 
+    fetchWithAuth(`/api/driver/cancel/${deliveryId}`, { method: 'POST' });
+
   // Admin APIs
   const getAdminDashboard = () => 
     fetchWithAuth('/api/admin/dashboard');
