@@ -243,6 +243,12 @@ frontend:
       - working: true
         agent: "main"
         comment: "✅ Added photo capture feature for pickup and delivery confirmation. Modal shows camera and gallery options."
+      - working: false
+        agent: "testing"
+        comment: "❌ BUG FOUND: 'Annuler la livraison' button not working on mobile - clicking the button does nothing, no confirmation dialog appears. Issue caused by Alert.alert() not working properly on mobile web."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIXED: Replaced Alert.alert() with custom Modal component for delivery cancellation. Created beautiful confirmation dialog with warning icon, proper styling, and 'Non'/'Oui, annuler' buttons. Tested complete flow: login → manage delivery → cancel → confirm → return to dashboard. All functionality working perfectly on mobile (iPhone 390x844)."
   
   - task: "Photo capture for pickup/delivery"
     implemented: true
