@@ -55,8 +55,18 @@ export default function DriverHome() {
     }
   };
 
+  // Initial load
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Auto-refresh every 15 seconds to get new deliveries
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 15000); // 15 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const onRefresh = useCallback(async () => {
