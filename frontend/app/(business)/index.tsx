@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -34,9 +35,12 @@ export default function BusinessHome() {
     }
   };
 
-  useEffect(() => {
-    loadDeliveries();
-  }, []);
+  // Reload deliveries when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadDeliveries();
+    }, [])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
