@@ -8,6 +8,7 @@ interface PhotoCaptureProps {
   visible: boolean;
   onClose: () => void;
   onCapture: (photo: string) => void;
+  onSkip?: () => void;  // Optional skip handler for delivery
   title: string;
   subtitle?: string;
   confirmButtonText?: string;
@@ -18,6 +19,7 @@ export default function PhotoCapture({
   visible,
   onClose,
   onCapture,
+  onSkip,
   title,
   subtitle,
   confirmButtonText = 'Confirmer',
