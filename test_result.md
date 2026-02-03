@@ -291,3 +291,5 @@ agent_communication:
     message: "Updated delivery creation form with new fields: customer_name, customer_phone, item_description (texte libre), destination_area. Added delivery_code for unique tracking. Backend and frontend updated accordingly."
   - agent: "testing"
     message: "✅ COMPLETE DELIVERY FLOW TESTED SUCCESSFULLY: All 8 test scenarios passed. Business login → delivery creation → driver login → job listing → job acceptance → admin dashboard → admin deliveries all working perfectly. Fixed admin login cookie issue during testing. Backend APIs are fully functional and ready for production use."
+  - agent: "testing"
+    message: "🔴 CRITICAL BUG FOUND & FIXED: 'Annuler la livraison' button was not working on mobile due to Alert.alert() incompatibility with mobile web. Implemented custom Modal component with proper styling and functionality. Complete cancellation flow now works perfectly on mobile devices."
