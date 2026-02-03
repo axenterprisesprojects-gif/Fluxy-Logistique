@@ -171,48 +171,38 @@ export default function DriverHome() {
   };
 
   // Handle cancel delivery (only if not yet picked up)
-  const handleCancelDelivery = async () => {
-    if (!currentActiveJob) return;
+  const handleCancelDelivery = () => {
+    const jobToCancel = currentActiveJob;
+    if (!jobToCancel) {
+      Alert.alert('Erreur', 'Aucune livraison à annuler');
+      return;
+    }
     
-    const performCancel = async () => {
-      try {
-        setCancellingDelivery(true);
-        await cancelDelivery(currentActiveJob.delivery_id);
-        
-        // Show success message
-        if (Platform.OS === 'web') {
-          window.alert('Livraison annulée');
-        } else {
-          Alert.alert('Succès', 'Livraison annulée');
+    Alert.alert(
+      'Annuler la livraison',
+      'Êtes-vous sûr de vouloir annuler cette livraison ?',
+      [
+        { text: 'Non', style: 'cancel' },
+        { 
+          text: 'Oui, annuler', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              setCancellingDelivery(true);
+              await cancelDelivery(jobToCancel.delivery_id);
+              Alert.alert('Succès', 'Livraison annulée');
+              setShowCurrentDeliveryModal(false);
+              await loadData();
+            } catch (error: any) {
+              Alert.alert('Erreur', error.message || 'Impossible d\'annuler');
+            } finally {
+              setCancellingDelivery(false);
+            }
+          }
         }
-        
-        setShowCurrentDeliveryModal(false);
-        await loadData();
-      } catch (error: any) {
-        const errorMsg = error.message || 'Impossible d\'annuler';
-        if (Platform.OS === 'web') {
-          window.alert('Erreur: ' + errorMsg);
-        } else {
-          Alert.alert('Erreur', errorMsg);
-        }
-      } finally {
-        setCancellingDelivery(false);
-      }
-    };
-    
-    // Show confirmation dialog
-    if (Platform.OS === 'web') {
-      if (window.confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
-        await performCancel();
-      }
-    } else {
-      Alert.alert(
-        'Annuler la livraison',
-        'Êtes-vous sûr de vouloir annuler cette livraison ?',
-        [
-          { text: 'Non', style: 'cancel' },
-          { text: 'Oui, annuler', style: 'destructive', onPress: performCancel }
-        ]
+      ]
+    );
+  };
       );
     }
   };
