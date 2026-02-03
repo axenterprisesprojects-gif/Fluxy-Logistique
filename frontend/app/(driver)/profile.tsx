@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 13,
     color: COLORS.gray[500],
-    marginTop: -12,
+    marginTop: 4,
     marginBottom: 16,
   },
   inputLabel: {
