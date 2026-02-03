@@ -909,6 +909,9 @@ async def create_delivery(data: DeliveryRequestCreate, user: User = Depends(requ
     
     await db.delivery_requests.insert_one(delivery_dict)
     
+    # 🔔 Send push notification to all validated drivers
+    asyncio.create_task(notify_drivers_new_delivery(delivery_dict))
+    
     return delivery
 
 @api_router.get("/business/deliveries")
