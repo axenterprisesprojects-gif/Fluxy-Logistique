@@ -73,11 +73,15 @@ export default function DriverHome() {
 
     try {
       setAcceptingId(deliveryId);
-      await acceptJob(deliveryId);
+      const acceptedJob = await acceptJob(deliveryId);
       if (Platform.OS === 'web') {
         window.alert('Mission acceptée !');
       }
       await loadData();
+      
+      // Open the current delivery modal automatically after accepting
+      setShowCurrentDeliveryModal(true);
+      
     } catch (error: any) {
       if (Platform.OS === 'web') {
         window.alert('Erreur: ' + (error.message || 'Impossible d\'accepter la mission'));
