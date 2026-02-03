@@ -1109,6 +1109,46 @@ async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto = None, 
     
     return delivery
 
+@api_router.post("/driver/cancel/{delivery_id}")
+async def driver_cancel_delivery(delivery_id: str, user: User = Depends(require_driver)):
+    """Cancel a delivery - ONLY if not yet picked up (status = accepted)"""
+    
+    # Check if delivery exists and belongs to this driver with status "accepted"
+    delivery = await db.delivery_requests.find_one({
+        "delivery_id": delivery_id,
+        "driver_id": user.user_id,
+        "status": "accepted"
+    })
+    
+    if not delivery:
+        raise HTTPException(
+            status_code=400, 
+            detail="Impossible d'annuler. La livraison n'existe pas, ne vous appartient pas, ou le colis a déjà été récupéré."
+        )
+    
+    # Reset the delivery to pending status (so another driver can take it)
+    result = await db.delivery_requests.update_one(
+        {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "accepted"},
+        {"$set": {
+            "status": "pending",
+            "driver_id": None,
+            "driver_name": None,
+            "accepted_at": None,
+            "cancelled_by_driver_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Impossible d'annuler la livraison")
+    
+    # Notify all drivers that a job is available again
+    updated_delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    asyncio.create_task(notify_drivers_new_delivery(updated_delivery))
+    
+    logger.info(f"📲 Driver {user.user_id} cancelled delivery {delivery_id}")
+    
+    return {"message": "Livraison annulée avec succès", "delivery_id": delivery_id}
+
 # ========================
 # ADMIN ENDPOINTS
 # ========================
