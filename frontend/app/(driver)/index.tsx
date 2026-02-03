@@ -87,22 +87,12 @@ export default function DriverHome() {
     }
   };
 
-  // Handle pickup confirmation
+  // Handle pickup confirmation - NO PHOTO REQUIRED
   const handleConfirmPickup = async () => {
-    // Open photo capture modal
-    setShowPickupPhotoModal(true);
-  };
-
-  // Handle pickup photo captured
-  const handlePickupPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
-    
-    // Close photo modal FIRST
-    setShowPickupPhotoModal(false);
-    
     try {
       setProcessingAction(true);
-      await confirmPickup(currentActiveJob.delivery_id, photo);
+      await confirmPickup(currentActiveJob.delivery_id, '');
       if (Platform.OS === 'web') {
         window.alert('Commande récupérée avec succès !');
       }
@@ -116,13 +106,41 @@ export default function DriverHome() {
     }
   };
 
-  // Handle delivery confirmation  
+  // Handle pickup photo captured (not used anymore, kept for compatibility)
+  const handlePickupPhotoCapture = async (photo: string) => {
+    // Not used - pickup doesn't require photo
+  };
+
+  // Handle delivery confirmation - PHOTO IS OPTIONAL
   const handleConfirmDelivery = async () => {
-    // Open photo capture modal
+    // Open photo capture modal with option to skip
     setShowDeliveryPhotoModal(true);
   };
 
-  // Handle delivery photo captured
+  // Handle delivery WITHOUT photo
+  const handleConfirmDeliveryWithoutPhoto = async () => {
+    if (!currentActiveJob) return;
+    
+    setShowDeliveryPhotoModal(false);
+    
+    try {
+      setProcessingAction(true);
+      await confirmDelivery(currentActiveJob.delivery_id, '');
+      if (Platform.OS === 'web') {
+        window.alert('Livraison terminée ! Félicitations !');
+      }
+      setShowCurrentDeliveryModal(false);
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible de confirmer'));
+      }
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+  // Handle delivery photo captured (OPTIONAL)
   const handleDeliveryPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
     
