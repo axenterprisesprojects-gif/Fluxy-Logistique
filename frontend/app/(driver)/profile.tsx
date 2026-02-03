@@ -127,31 +127,26 @@ export default function DriverProfile() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      console.log('Driver Profile: Logout initiated...');
-      
-      // Clear AsyncStorage FIRST
-      await AsyncStorage.removeItem('session_token');
-      console.log('Driver Profile: AsyncStorage cleared');
-      
-      // Call logout from context
-      await logout();
-      console.log('Driver Profile: Context logout complete');
-      
-    } catch (error) {
-      console.error('Driver Profile: Logout error:', error);
-    }
+  const handleLogout = () => {
+    // BRUTAL LOGOUT - No async, no waiting, just DO IT
+    console.log('🔴 LOGOUT: Starting brutal logout...');
     
-    // FORCE navigation regardless of what happened above
-    console.log('Driver Profile: Forcing navigation to home...');
-    setTimeout(() => {
-      if (Platform.OS === 'web') {
-        window.location.href = '/';
-      } else {
-        router.replace('/');
-      }
-    }, 100);
+    // 1. Clear storage synchronously (fire and forget)
+    AsyncStorage.clear().catch(() => {});
+    AsyncStorage.removeItem('session_token').catch(() => {});
+    
+    // 2. Call context logout (fire and forget)
+    logout().catch(() => {});
+    
+    // 3. IMMEDIATE navigation - don't wait for anything
+    console.log('🔴 LOGOUT: Navigating NOW...');
+    
+    if (Platform.OS === 'web') {
+      window.location.href = '/';
+    } else {
+      // Use router.replace with immediate effect
+      router.replace('/');
+    }
   };
 
   const getDocumentStatus = (docType: string) => {
