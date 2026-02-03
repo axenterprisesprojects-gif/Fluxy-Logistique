@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } fr
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useApi } from '../../src/hooks/useApi';
 import { showAlert, showDestructiveConfirm } from '../../src/utils/alert';
@@ -46,19 +47,29 @@ export default function BusinessProfile() {
 
   const handleLogout = async () => {
     try {
-      console.log('Business logout initiated...');
+      console.log('Business Profile: Logout initiated...');
+      
+      // Clear AsyncStorage FIRST
+      await AsyncStorage.removeItem('session_token');
+      console.log('Business Profile: AsyncStorage cleared');
+      
+      // Call logout from context
       await logout();
-      console.log('Business logout successful, redirecting...');
+      console.log('Business Profile: Context logout complete');
+      
     } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // ALWAYS redirect, even if logout fails
+      console.error('Business Profile: Logout error:', error);
+    }
+    
+    // FORCE navigation regardless of what happened above
+    console.log('Business Profile: Forcing navigation to home...');
+    setTimeout(() => {
       if (Platform.OS === 'web') {
         window.location.href = '/';
       } else {
         router.replace('/');
       }
-    }
+    }, 100);
   };
 
   return (
