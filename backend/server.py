@@ -1023,6 +1023,10 @@ async def accept_delivery(delivery_id: str, user: User = Depends(require_driver)
         raise HTTPException(status_code=400, detail="Cette livraison n'est plus disponible")
     
     delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that delivery was accepted
+    asyncio.create_task(notify_business_delivery_accepted(delivery))
+    
     return delivery
 
 @api_router.post("/driver/confirm-pickup/{delivery_id}")
@@ -1041,6 +1045,10 @@ async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto, user: Use
         raise HTTPException(status_code=400, detail="Impossible de confirmer la récupération")
     
     delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that package was picked up
+    asyncio.create_task(notify_business_delivery_picked_up(delivery))
+    
     return delivery
 
 @api_router.post("/driver/confirm-delivery/{delivery_id}")
@@ -1059,6 +1067,10 @@ async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto, user: U
         raise HTTPException(status_code=400, detail="Impossible de confirmer la livraison")
     
     delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that delivery was completed
+    asyncio.create_task(notify_business_delivery_completed(delivery))
+    
     return delivery
 
 # ========================
