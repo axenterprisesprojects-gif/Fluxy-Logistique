@@ -165,17 +165,19 @@ export default function NewDelivery() {
         destination_area: destinationArea.trim(),
         pickup_time_slot: selectedTimeSlot.pickup,
         delivery_time_slot: selectedTimeSlot.delivery,
+        pickup_day: selectedDay,
         total_price: price,
       });
       
       if (Platform.OS === 'web') {
         window.alert(`Demande créée avec succès!\n\nCode: ${result.delivery_code}\nPrix: ${price.toLocaleString()} F`);
-        router.push('/(business)/');
       } else {
-        showAlert('Succès', `Demande créée!\nCode: ${result.delivery_code}`, () => {
-          router.push('/(business)/');
-        });
+        showAlert('Succès', `Demande créée!\nCode: ${result.delivery_code}`);
       }
+      
+      // Navigate back to home to see the new delivery
+      router.replace('/(business)/');
+      
     } catch (error: any) {
       showAlert('Erreur', error.message || 'Impossible de créer la livraison');
     } finally {
