@@ -273,34 +273,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    console.log('AuthContext: Starting logout...');
-    try {
-      if (sessionToken) {
-        console.log('AuthContext: Calling logout API...');
-        await fetch(`${BACKEND_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionToken}`,
-          },
-        });
-        console.log('AuthContext: API logout successful');
-      }
-    } catch (error) {
-      console.error('AuthContext: Logout API error:', error);
-    }
+    console.log('🔴 AuthContext: Starting IMMEDIATE logout...');
     
-    // ALWAYS clear local state, even if API fails
-    console.log('AuthContext: Clearing local storage...');
+    // FIRST: Clear state IMMEDIATELY (synchronous)
+    setSessionToken(null);
+    setUser(null);
+    console.log('🔴 AuthContext: State cleared IMMEDIATELY');
+    
+    // THEN: Clean up storage and call API (async, fire and forget)
     try {
       await AsyncStorage.removeItem('session_token');
+      await AsyncStorage.clear();
+      console.log('🔴 AuthContext: Storage cleared');
     } catch (e) {
       console.error('AuthContext: Error clearing storage:', e);
     }
     
-    console.log('AuthContext: Clearing state...');
-    setSessionToken(null);
-    setUser(null);
-    console.log('AuthContext: Logout complete');
+    // Call API logout (optional, don't wait)
+    if (sessionToken) {
+      fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` },
+      }).catch(() => {});
+    }
+    
+    console.log('🔴 AuthContext: Logout complete');
   };
 
   const refreshUser = async () => {
