@@ -656,18 +656,33 @@ export default function DriverHome() {
                 {/* Action Buttons */}
                 <View style={styles.modalActions}>
                   {currentActiveJob.status === 'accepted' && (
-                    <TouchableOpacity
-                      style={[styles.modalActionBtn, styles.modalActionBtnPickup]}
-                      onPress={handleConfirmPickup}
-                      disabled={processingAction}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
-                      <Text style={styles.modalActionBtnText}>
-                        {processingAction ? 'Confirmation...' : 'Commande récupérée'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                    <>
+                      <TouchableOpacity
+                        style={[styles.modalActionBtn, styles.modalActionBtnPickup]}
+                        onPress={handleConfirmPickup}
+                        disabled={processingAction || cancellingDelivery}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
+                        <Text style={styles.modalActionBtnText}>
+                          {processingAction ? 'Confirmation...' : 'Commande récupérée'}
+                        </Text>
+                      </TouchableOpacity>
+                      
+                      {/* Cancel button - only visible before pickup */}
+                      <TouchableOpacity
+                        style={[styles.modalActionBtn, styles.modalActionBtnCancel]}
+                        onPress={handleCancelDelivery}
+                        disabled={processingAction || cancellingDelivery}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle" size={24} color={COLORS.white} />
+                        <Text style={styles.modalActionBtnText}>
+                          {cancellingDelivery ? 'Annulation...' : 'Annuler la livraison'}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}}
 
                   {currentActiveJob.status === 'pickup_confirmed' && (
                     <TouchableOpacity
