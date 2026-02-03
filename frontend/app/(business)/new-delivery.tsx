@@ -26,18 +26,25 @@ const LIBREVILLE_NEIGHBORHOODS = [
 ].sort();
 
 // Time slots for pickup
-const PICKUP_TIME_SLOTS = [
-  { id: '08-09', label: '08h - 09h', pickup: '08h-09h', delivery: '08h-10h' },
-  { id: '09-10', label: '09h - 10h', pickup: '09h-10h', delivery: '09h-11h' },
-  { id: '10-11', label: '10h - 11h', pickup: '10h-11h', delivery: '10h-12h' },
-  { id: '11-12', label: '11h - 12h', pickup: '11h-12h', delivery: '11h-13h' },
-  { id: '12-13', label: '12h - 13h', pickup: '12h-13h', delivery: '12h-14h' },
-  { id: '13-14', label: '13h - 14h', pickup: '13h-14h', delivery: '13h-15h' },
-  { id: '14-15', label: '14h - 15h', pickup: '14h-15h', delivery: '14h-16h' },
-  { id: '15-16', label: '15h - 16h', pickup: '15h-16h', delivery: '15h-17h' },
-  { id: '16-17', label: '16h - 17h', pickup: '16h-17h', delivery: '16h-18h' },
-  { id: '17-18', label: '17h - 18h', pickup: '17h-18h', delivery: '17h-19h' },
-  { id: '18-19', label: '18h - 19h', pickup: '18h-19h', delivery: '18h-20h' },
+const ALL_TIME_SLOTS = [
+  { id: '08-09', label: '08h - 09h', startHour: 8, pickup: '08h-09h', delivery: '08h-10h' },
+  { id: '09-10', label: '09h - 10h', startHour: 9, pickup: '09h-10h', delivery: '09h-11h' },
+  { id: '10-11', label: '10h - 11h', startHour: 10, pickup: '10h-11h', delivery: '10h-12h' },
+  { id: '11-12', label: '11h - 12h', startHour: 11, pickup: '11h-12h', delivery: '11h-13h' },
+  { id: '12-13', label: '12h - 13h', startHour: 12, pickup: '12h-13h', delivery: '12h-14h' },
+  { id: '13-14', label: '13h - 14h', startHour: 13, pickup: '13h-14h', delivery: '13h-15h' },
+  { id: '14-15', label: '14h - 15h', startHour: 14, pickup: '14h-15h', delivery: '14h-16h' },
+  { id: '15-16', label: '15h - 16h', startHour: 15, pickup: '15h-16h', delivery: '15h-17h' },
+  { id: '16-17', label: '16h - 17h', startHour: 16, pickup: '16h-17h', delivery: '16h-18h' },
+  { id: '17-18', label: '17h - 18h', startHour: 17, pickup: '17h-18h', delivery: '17h-19h' },
+  { id: '18-19', label: '18h - 19h', startHour: 18, pickup: '18h-19h', delivery: '18h-20h' },
+];
+
+// Days options
+const DAYS_OPTIONS = [
+  { id: 'today', label: "Aujourd'hui" },
+  { id: 'tomorrow', label: 'Demain' },
+  { id: 'after_tomorrow', label: 'Après-demain' },
 ];
 
 const DEFAULT_PRICE = 25000;
@@ -63,13 +70,15 @@ export default function NewDelivery() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [itemDescription, setItemDescription] = useState('');
   const [destinationArea, setDestinationArea] = useState('');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<typeof PICKUP_TIME_SLOTS[0] | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string>('today');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<typeof ALL_TIME_SLOTS[0] | null>(null);
   const [price, setPrice] = useState(DEFAULT_PRICE);
   
   // Modals
   const [neighborhoodModalVisible, setNeighborhoodModalVisible] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
   const [timeSlotModalVisible, setTimeSlotModalVisible] = useState(false);
+  const [dayModalVisible, setDayModalVisible] = useState(false);
 
   const needsProfileSetup = !user?.business_address;
 
@@ -79,6 +88,23 @@ export default function NewDelivery() {
     const search = neighborhoodSearch.toLowerCase();
     return LIBREVILLE_NEIGHBORHOODS.filter(n => n.toLowerCase().includes(search));
   }, [neighborhoodSearch]);
+
+  // Filter time slots based on current time (only for today)
+  const availableTimeSlots = useMemo(() => {
+    if (selectedDay !== 'today') {
+      // For tomorrow or after, all slots are available
+      return ALL_TIME_SLOTS;
+    }
+    // For today, filter out past time slots
+    const currentHour = new Date().getHours();
+    return ALL_TIME_SLOTS.filter(slot => slot.startHour > currentHour);
+  }, [selectedDay]);
+
+  // Get selected day label
+  const getSelectedDayLabel = () => {
+    const day = DAYS_OPTIONS.find(d => d.id === selectedDay);
+    return day?.label || "Aujourd'hui";
+  };
 
   const handleSaveProfile = async () => {
     if (!businessName.trim() || !businessAddress.trim()) {
