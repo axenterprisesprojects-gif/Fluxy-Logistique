@@ -129,19 +129,29 @@ export default function DriverProfile() {
 
   const handleLogout = async () => {
     try {
-      console.log('Logout initiated...');
+      console.log('Driver Profile: Logout initiated...');
+      
+      // Clear AsyncStorage FIRST
+      await AsyncStorage.removeItem('session_token');
+      console.log('Driver Profile: AsyncStorage cleared');
+      
+      // Call logout from context
       await logout();
-      console.log('Logout successful, redirecting...');
+      console.log('Driver Profile: Context logout complete');
+      
     } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // ALWAYS redirect, even if logout fails
+      console.error('Driver Profile: Logout error:', error);
+    }
+    
+    // FORCE navigation regardless of what happened above
+    console.log('Driver Profile: Forcing navigation to home...');
+    setTimeout(() => {
       if (Platform.OS === 'web') {
         window.location.href = '/';
       } else {
         router.replace('/');
       }
-    }
+    }, 100);
   };
 
   const getDocumentStatus = (docType: string) => {
