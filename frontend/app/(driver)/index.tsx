@@ -175,34 +175,46 @@ export default function DriverHome() {
   const handleCancelDelivery = () => {
     const jobToCancel = currentActiveJob;
     if (!jobToCancel) {
-      Alert.alert('Erreur', 'Aucune livraison à annuler');
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Aucune livraison à annuler');
+      } else {
+        Alert.alert('Erreur', 'Aucune livraison à annuler');
+      }
       return;
     }
     
-    Alert.alert(
-      'Annuler la livraison',
-      'Êtes-vous sûr de vouloir annuler cette livraison ?',
-      [
-        { text: 'Non', style: 'cancel' },
-        { 
-          text: 'Oui, annuler', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              setCancellingDelivery(true);
-              await cancelDelivery(jobToCancel.delivery_id);
-              Alert.alert('Succès', 'Livraison annulée');
-              setShowCurrentDeliveryModal(false);
-              await loadData();
-            } catch (error: any) {
-              Alert.alert('Erreur', error.message || 'Impossible d\'annuler');
-            } finally {
-              setCancellingDelivery(false);
-            }
-          }
-        }
-      ]
-    );
+    // Show custom confirmation modal instead of Alert.alert
+    setShowCancelConfirmModal(true);
+  };
+
+  // Handle confirmed cancellation
+  const handleConfirmCancellation = async () => {
+    const jobToCancel = currentActiveJob;
+    if (!jobToCancel) return;
+    
+    setShowCancelConfirmModal(false);
+    
+    try {
+      setCancellingDelivery(true);
+      await cancelDelivery(jobToCancel.delivery_id);
+      
+      if (Platform.OS === 'web') {
+        window.alert('Succès: Livraison annulée');
+      } else {
+        Alert.alert('Succès', 'Livraison annulée');
+      }
+      
+      setShowCurrentDeliveryModal(false);
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible d\'annuler'));
+      } else {
+        Alert.alert('Erreur', error.message || 'Impossible d\'annuler');
+      }
+    } finally {
+      setCancellingDelivery(false);
+    }
   };
 
   // Filter jobs based on selected filter
