@@ -69,9 +69,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
   },
   outline: {
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.white,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.gray[400],
   },
   danger: {
     backgroundColor: COLORS.error,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   text_outline: {
-    color: COLORS.primary,
+    color: COLORS.gray[700],
   },
   text_danger: {
     color: COLORS.white,
