@@ -1476,4 +1476,65 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray[700],
   },
+  // Cancel confirmation modal styles
+  cancelModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  cancelModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  cancelModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cancelModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.gray[900],
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  cancelModalMessage: {
+    fontSize: 15,
+    color: COLORS.gray[600],
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  cancelModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelModalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelModalBtnSecondary: {
+    backgroundColor: COLORS.gray[100],
+  },
+  cancelModalBtnPrimary: {
+    backgroundColor: '#EF4444',
+  },
+  cancelModalBtnSecondaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+  },
+  cancelModalBtnPrimaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
 });
