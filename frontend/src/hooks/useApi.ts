@@ -122,6 +122,7 @@ export function useApi() {
     acceptJob,
     confirmPickup,
     confirmDelivery,
+    cancelDelivery,
     // Admin
     getAdminDashboard,
     getAdminDeliveries,
