@@ -121,12 +121,17 @@ export default function DriverHome() {
   // Handle delivery photo captured
   const handleDeliveryPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
+    
+    // Close photo modal FIRST
+    setShowDeliveryPhotoModal(false);
+    
     try {
       setProcessingAction(true);
       await confirmDelivery(currentActiveJob.delivery_id, photo);
       if (Platform.OS === 'web') {
         window.alert('Livraison terminée ! Félicitations !');
       }
+      // Close delivery modal after success
       setShowCurrentDeliveryModal(false);
       await loadData();
     } catch (error: any) {
