@@ -2,14 +2,18 @@
   "expo": {
     "name": "Fluxy Logistique",
     "slug": "fluxy-logistique",
-    "version": "1.0.7",
+    "version": "1.0.8",
+    "owner": "axenterprises",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "backendUrl": "https://logistics-launch.preview.emergentagent.com"
+      "backendUrl": "https://logistics-launch.preview.emergentagent.com",
+      "eas": {
+        "projectId": "fluxy-logistique"
+      }
     },
     "ios": {
       "supportsTablet": true,
