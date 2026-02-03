@@ -753,6 +753,48 @@ export default function DriverHome() {
         confirmButtonText="Confirmer avec photo"
         type="delivery"
       />
+
+      {/* Custom Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCancelConfirmModal(false)}
+      >
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.cancelModalHeader}>
+              <Ionicons name="warning" size={32} color="#EF4444" />
+              <Text style={styles.cancelModalTitle}>Annuler la livraison</Text>
+            </View>
+            
+            <Text style={styles.cancelModalMessage}>
+              Êtes-vous sûr de vouloir annuler cette livraison ?
+            </Text>
+            
+            <View style={styles.cancelModalActions}>
+              <TouchableOpacity
+                style={[styles.cancelModalBtn, styles.cancelModalBtnSecondary]}
+                onPress={() => setShowCancelConfirmModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelModalBtnSecondaryText}>Non</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.cancelModalBtn, styles.cancelModalBtnPrimary]}
+                onPress={handleConfirmCancellation}
+                disabled={cancellingDelivery}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelModalBtnPrimaryText}>
+                  {cancellingDelivery ? 'Annulation...' : 'Oui, annuler'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
