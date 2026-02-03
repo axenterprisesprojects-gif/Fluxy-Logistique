@@ -195,9 +195,21 @@ export default function PhotoCapture({
                     <Text style={styles.instructionsText}>
                       {isPickup 
                         ? 'Prenez une photo des articles récupérés pour confirmer'
-                        : 'Prenez une photo de la livraison comme preuve'}
+                        : 'La photo est optionnelle mais recommandée comme preuve'}
                     </Text>
                   </View>
+
+                  {/* Skip button for delivery - PHOTO IS OPTIONAL */}
+                  {!isPickup && onSkip && (
+                    <TouchableOpacity 
+                      style={styles.skipButton}
+                      onPress={onSkip}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="checkmark-done" size={20} color={COLORS.secondary} />
+                      <Text style={styles.skipButtonText}>Confirmer sans photo</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
             </View>
@@ -325,12 +337,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     gap: 10,
+    marginBottom: 16,
   },
   instructionsText: {
     flex: 1,
     fontSize: 14,
     color: COLORS.gray[600],
     lineHeight: 20,
+  },
+  skipButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 2,
+    borderColor: COLORS.secondary,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.secondary,
   },
   previewContainer: {
     alignItems: 'center',
