@@ -316,18 +316,49 @@ export default function NewDelivery() {
         </Card>
 
         {/* Time Slots */}
-        <Text style={styles.sectionTitle}>Horaire de récupération</Text>
+        <Text style={styles.sectionTitle}>Jour et horaire de récupération</Text>
         <Card style={styles.formCard}>
+          {/* Day Selector */}
+          <Text style={styles.inputLabel}>Jour de récupération</Text>
           <TouchableOpacity
             style={styles.selector}
-            onPress={() => setTimeSlotModalVisible(true)}
+            onPress={() => setDayModalVisible(true)}
           >
-            <Ionicons name="time" size={20} color={selectedTimeSlot ? COLORS.warning : COLORS.gray[400]} />
-            <Text style={[styles.selectorText, !selectedTimeSlot && styles.selectorPlaceholder]}>
-              {selectedTimeSlot ? selectedTimeSlot.label : 'Sélectionner une tranche horaire'}
+            <Ionicons name="calendar" size={20} color={COLORS.primary} />
+            <Text style={styles.selectorText}>
+              {getSelectedDayLabel()}
             </Text>
             <Ionicons name="chevron-down" size={20} color={COLORS.gray[400]} />
           </TouchableOpacity>
+
+          {/* Time Slot Selector */}
+          <Text style={[styles.inputLabel, { marginTop: 16 }]}>Tranche horaire</Text>
+          <TouchableOpacity
+            style={styles.selector}
+            onPress={() => {
+              if (availableTimeSlots.length === 0) {
+                showAlert('Information', 'Aucune tranche horaire disponible pour aujourd\'hui. Veuillez sélectionner demain ou après-demain.');
+              } else {
+                setTimeSlotModalVisible(true);
+              }
+            }}
+          >
+            <Ionicons name="time" size={20} color={selectedTimeSlot ? COLORS.warning : COLORS.gray[400]} />
+            <Text style={[styles.selectorText, !selectedTimeSlot && styles.selectorPlaceholder]}>
+              {selectedTimeSlot ? selectedTimeSlot.label : (availableTimeSlots.length === 0 ? 'Aucune tranche disponible' : 'Sélectionner une tranche horaire')}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
+          {/* Info about available slots */}
+          {selectedDay === 'today' && availableTimeSlots.length === 0 && (
+            <View style={styles.warningBox}>
+              <Ionicons name="alert-circle" size={18} color={COLORS.warning} />
+              <Text style={styles.warningText}>
+                Il est trop tard pour planifier une récupération aujourd'hui. Veuillez choisir demain.
+              </Text>
+            </View>
+          )}
 
           {/* Auto-calculated delivery time */}
           {selectedTimeSlot && (
@@ -335,7 +366,7 @@ export default function NewDelivery() {
               <Ionicons name="bicycle" size={18} color={COLORS.secondary} />
               <View style={styles.deliveryTimeContent}>
                 <Text style={styles.deliveryTimeLabel}>Heure de livraison estimée</Text>
-                <Text style={styles.deliveryTimeValue}>{selectedTimeSlot.delivery}</Text>
+                <Text style={styles.deliveryTimeValue}>{getSelectedDayLabel()} - {selectedTimeSlot.delivery}</Text>
               </View>
             </View>
           )}
