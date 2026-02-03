@@ -746,6 +746,25 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     marginTop: 2,
   },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
+    gap: 10,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.gray[700],
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: COLORS.gray[400],
+    marginTop: 4,
+  },
   priceCard: {
     padding: 20,
     marginBottom: 16,
