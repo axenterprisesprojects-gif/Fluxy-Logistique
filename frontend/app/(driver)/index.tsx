@@ -21,7 +21,7 @@ export default function DriverHome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { getAvailableJobs, getDriverJobs, acceptJob, confirmPickup, confirmDelivery } = useApi();
+  const { getAvailableJobs, getDriverJobs, acceptJob, confirmPickup, confirmDelivery, cancelDelivery } = useApi();
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,6 +32,7 @@ export default function DriverHome() {
   const [processingAction, setProcessingAction] = useState(false);
   const [showPickupPhotoModal, setShowPickupPhotoModal] = useState(false);
   const [showDeliveryPhotoModal, setShowDeliveryPhotoModal] = useState(false);
+  const [cancellingDelivery, setCancellingDelivery] = useState(false);
 
   const loadData = async () => {
     try {
