@@ -491,33 +491,89 @@ export default function NewDelivery() {
             </View>
 
             <Text style={styles.modalSubtitle}>
-              L'heure de livraison sera calculée automatiquement (+1h)
+              {selectedDay === 'today' 
+                ? `Créneaux disponibles pour aujourd'hui (après ${new Date().getHours()}h)`
+                : `Tous les créneaux disponibles pour ${getSelectedDayLabel().toLowerCase()}`}
             </Text>
 
             <ScrollView style={styles.timeSlotList}>
-              {PICKUP_TIME_SLOTS.map((slot) => (
+              {availableTimeSlots.length === 0 ? (
+                <View style={styles.emptyList}>
+                  <Ionicons name="time-outline" size={48} color={COLORS.gray[300]} />
+                  <Text style={styles.emptyText}>Aucun créneau disponible</Text>
+                  <Text style={styles.emptySubtext}>Veuillez sélectionner un autre jour</Text>
+                </View>
+              ) : (
+                availableTimeSlots.map((slot) => (
+                  <TouchableOpacity
+                    key={slot.id}
+                    style={[styles.timeSlotItem, selectedTimeSlot?.id === slot.id && styles.timeSlotItemSelected]}
+                    onPress={() => {
+                      setSelectedTimeSlot(slot);
+                      setTimeSlotModalVisible(false);
+                    }}
+                  >
+                    <View style={styles.timeSlotLeft}>
+                      <View style={[styles.timeSlotIcon, selectedTimeSlot?.id === slot.id && styles.timeSlotIconSelected]}>
+                        <Ionicons name="time" size={18} color={selectedTimeSlot?.id === slot.id ? COLORS.white : COLORS.warning} />
+                      </View>
+                      <View>
+                        <Text style={[styles.timeSlotLabel, selectedTimeSlot?.id === slot.id && styles.timeSlotLabelSelected]}>
+                          Récupération: {slot.pickup}
+                        </Text>
+                        <Text style={styles.timeSlotDelivery}>
+                          Livraison: {slot.delivery}
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedTimeSlot?.id === slot.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Day Selection Modal */}
+      <Modal
+        visible={dayModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDayModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Jour de récupération</Text>
+              <TouchableOpacity onPress={() => setDayModalVisible(false)}>
+                <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.timeSlotList}>
+              {DAYS_OPTIONS.map((day) => (
                 <TouchableOpacity
-                  key={slot.id}
-                  style={[styles.timeSlotItem, selectedTimeSlot?.id === slot.id && styles.timeSlotItemSelected]}
+                  key={day.id}
+                  style={[styles.timeSlotItem, selectedDay === day.id && styles.timeSlotItemSelected]}
                   onPress={() => {
-                    setSelectedTimeSlot(slot);
-                    setTimeSlotModalVisible(false);
+                    setSelectedDay(day.id);
+                    // Reset time slot when day changes
+                    setSelectedTimeSlot(null);
+                    setDayModalVisible(false);
                   }}
                 >
                   <View style={styles.timeSlotLeft}>
-                    <View style={[styles.timeSlotIcon, selectedTimeSlot?.id === slot.id && styles.timeSlotIconSelected]}>
-                      <Ionicons name="time" size={18} color={selectedTimeSlot?.id === slot.id ? COLORS.white : COLORS.warning} />
+                    <View style={[styles.timeSlotIcon, selectedDay === day.id && styles.timeSlotIconSelected]}>
+                      <Ionicons name="calendar" size={18} color={selectedDay === day.id ? COLORS.white : COLORS.primary} />
                     </View>
-                    <View>
-                      <Text style={[styles.timeSlotLabel, selectedTimeSlot?.id === slot.id && styles.timeSlotLabelSelected]}>
-                        Récupération: {slot.pickup}
-                      </Text>
-                      <Text style={styles.timeSlotDelivery}>
-                        Livraison: {slot.delivery}
-                      </Text>
-                    </View>
+                    <Text style={[styles.timeSlotLabel, selectedDay === day.id && styles.timeSlotLabelSelected]}>
+                      {day.label}
+                    </Text>
                   </View>
-                  {selectedTimeSlot?.id === slot.id && (
+                  {selectedDay === day.id && (
                     <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
                   )}
                 </TouchableOpacity>
