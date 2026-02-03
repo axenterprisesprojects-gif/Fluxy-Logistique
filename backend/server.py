@@ -1054,19 +1054,21 @@ async def accept_delivery(delivery_id: str, user: User = Depends(require_driver)
     return delivery
 
 @api_router.post("/driver/confirm-pickup/{delivery_id}")
-async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto, user: User = Depends(require_driver)):
-    """Confirm pickup with photo - PHOTO IS REQUIRED"""
-    # Check if photo is provided
-    if not data.photo or len(data.photo) < 100:
-        raise HTTPException(status_code=400, detail="La photo de récupération est obligatoire")
+async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto = None, user: User = Depends(require_driver)):
+    """Confirm pickup - NO PHOTO REQUIRED"""
+    
+    update_data = {
+        "status": "pickup_confirmed",
+        "pickup_at": datetime.now(timezone.utc)
+    }
+    
+    # Photo is optional
+    if data and data.photo and len(data.photo) > 100:
+        update_data["pickup_photo"] = data.photo
     
     result = await db.delivery_requests.update_one(
         {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "accepted"},
-        {"$set": {
-            "status": "pickup_confirmed",
-            "pickup_photo": data.photo,
-            "pickup_at": datetime.now(timezone.utc)
-        }}
+        {"$set": update_data}
     )
     
     if result.modified_count == 0:
@@ -1080,19 +1082,21 @@ async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto, user: Use
     return delivery
 
 @api_router.post("/driver/confirm-delivery/{delivery_id}")
-async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto, user: User = Depends(require_driver)):
-    """Confirm delivery with photo - PHOTO IS REQUIRED"""
-    # Check if photo is provided
-    if not data.photo or len(data.photo) < 100:
-        raise HTTPException(status_code=400, detail="La photo de livraison est obligatoire")
+async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto = None, user: User = Depends(require_driver)):
+    """Confirm delivery - PHOTO IS OPTIONAL"""
+    
+    update_data = {
+        "status": "delivered",
+        "delivered_at": datetime.now(timezone.utc)
+    }
+    
+    # Photo is optional
+    if data and data.photo and len(data.photo) > 100:
+        update_data["delivery_photo"] = data.photo
     
     result = await db.delivery_requests.update_one(
         {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "pickup_confirmed"},
-        {"$set": {
-            "status": "delivered",
-            "delivery_photo": data.photo,
-            "delivered_at": datetime.now(timezone.utc)
-        }}
+        {"$set": update_data}
     )
     
     if result.modified_count == 0:
