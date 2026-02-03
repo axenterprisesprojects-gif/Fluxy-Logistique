@@ -96,6 +96,10 @@ export default function DriverHome() {
   // Handle pickup photo captured
   const handlePickupPhotoCapture = async (photo: string) => {
     if (!currentActiveJob) return;
+    
+    // Close photo modal FIRST
+    setShowPickupPhotoModal(false);
+    
     try {
       setProcessingAction(true);
       await confirmPickup(currentActiveJob.delivery_id, photo);
