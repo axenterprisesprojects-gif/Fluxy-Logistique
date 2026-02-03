@@ -109,15 +109,24 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   // Get Expo push token
   try {
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    // Use experienceId format: @owner/slug
+    const experienceId = '@axenterprises/fluxy-logistique';
     
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: projectId,
+      projectId: experienceId,
     });
     token = tokenData.data;
     console.log('Expo push token:', token);
   } catch (err) {
     console.error('Error getting push token:', err);
+    // Try without projectId as fallback
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      token = tokenData.data;
+      console.log('Expo push token (fallback):', token);
+    } catch (fallbackErr) {
+      console.error('Fallback also failed:', fallbackErr);
+    }
   }
 
   // Configure Android channel
