@@ -2,7 +2,7 @@
   "expo": {
     "name": "Fluxy Logistique",
     "slug": "fluxy-logistique",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
@@ -28,12 +28,21 @@
       "package": "com.fluxylogistique.app",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE"
-      ]
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "androidStatusBar": {
       "backgroundColor": "#2563EB",
       "barStyle": "light-content"
+    },
+    "notification": {
+      "icon": "./assets/images/icon.png",
+      "color": "#2563EB",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Fluxy Logistique"
     },
     "web": {
       "bundler": "metro",
@@ -49,6 +58,14 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#000"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#2563EB",
+          "sounds": []
         }
       ]
     ],
