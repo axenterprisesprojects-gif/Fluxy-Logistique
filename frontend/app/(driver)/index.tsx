@@ -203,9 +203,6 @@ export default function DriverHome() {
       ]
     );
   };
-      );
-    }
-  };
 
   // Filter jobs based on selected filter
   const getFilteredJobs = () => {
