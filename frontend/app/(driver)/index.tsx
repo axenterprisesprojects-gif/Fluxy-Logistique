@@ -170,6 +170,34 @@ export default function DriverHome() {
     }
   };
 
+  // Handle cancel delivery (only if not yet picked up)
+  const handleCancelDelivery = async () => {
+    if (!currentActiveJob) return;
+    
+    // Confirm cancellation
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
+        return;
+      }
+    }
+    
+    try {
+      setCancellingDelivery(true);
+      await cancelDelivery(currentActiveJob.delivery_id);
+      if (Platform.OS === 'web') {
+        window.alert('Livraison annulée');
+      }
+      setShowCurrentDeliveryModal(false);
+      await loadData();
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: ' + (error.message || 'Impossible d\'annuler'));
+      }
+    } finally {
+      setCancellingDelivery(false);
+    }
+  };
+
   // Filter jobs based on selected filter
   const getFilteredJobs = () => {
     if (selectedFilter === 'available') {
