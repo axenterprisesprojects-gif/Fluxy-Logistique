@@ -682,7 +682,7 @@ export default function DriverHome() {
                         </Text>
                       </TouchableOpacity>
                     </>
-                  )}}
+                  )}
 
                   {currentActiveJob.status === 'pickup_confirmed' && (
                     <TouchableOpacity
