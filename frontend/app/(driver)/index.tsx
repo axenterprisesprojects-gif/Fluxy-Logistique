@@ -174,27 +174,46 @@ export default function DriverHome() {
   const handleCancelDelivery = async () => {
     if (!currentActiveJob) return;
     
-    // Confirm cancellation
-    if (Platform.OS === 'web') {
-      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
-        return;
+    const performCancel = async () => {
+      try {
+        setCancellingDelivery(true);
+        await cancelDelivery(currentActiveJob.delivery_id);
+        
+        // Show success message
+        if (Platform.OS === 'web') {
+          window.alert('Livraison annulée');
+        } else {
+          Alert.alert('Succès', 'Livraison annulée');
+        }
+        
+        setShowCurrentDeliveryModal(false);
+        await loadData();
+      } catch (error: any) {
+        const errorMsg = error.message || 'Impossible d\'annuler';
+        if (Platform.OS === 'web') {
+          window.alert('Erreur: ' + errorMsg);
+        } else {
+          Alert.alert('Erreur', errorMsg);
+        }
+      } finally {
+        setCancellingDelivery(false);
       }
-    }
+    };
     
-    try {
-      setCancellingDelivery(true);
-      await cancelDelivery(currentActiveJob.delivery_id);
-      if (Platform.OS === 'web') {
-        window.alert('Livraison annulée');
+    // Show confirmation dialog
+    if (Platform.OS === 'web') {
+      if (window.confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
+        await performCancel();
       }
-      setShowCurrentDeliveryModal(false);
-      await loadData();
-    } catch (error: any) {
-      if (Platform.OS === 'web') {
-        window.alert('Erreur: ' + (error.message || 'Impossible d\'annuler'));
-      }
-    } finally {
-      setCancellingDelivery(false);
+    } else {
+      Alert.alert(
+        'Annuler la livraison',
+        'Êtes-vous sûr de vouloir annuler cette livraison ?',
+        [
+          { text: 'Non', style: 'cancel' },
+          { text: 'Oui, annuler', style: 'destructive', onPress: performCancel }
+        ]
+      );
     }
   };
 
