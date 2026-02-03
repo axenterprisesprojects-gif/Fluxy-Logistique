@@ -33,6 +33,7 @@ export default function DriverHome() {
   const [showPickupPhotoModal, setShowPickupPhotoModal] = useState(false);
   const [showDeliveryPhotoModal, setShowDeliveryPhotoModal] = useState(false);
   const [cancellingDelivery, setCancellingDelivery] = useState(false);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
   const loadData = async () => {
     try {
