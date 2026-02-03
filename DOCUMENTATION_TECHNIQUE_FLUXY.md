@@ -409,11 +409,50 @@ eas build --platform ios
 
 ## 🔧 Points d'Extension Futurs
 
-1. **Notifications Push** - Notifier chauffeurs des nouvelles livraisons
+1. ~~**Notifications Push**~~ ✅ **IMPLÉMENTÉ** - Notifications aux chauffeurs et commerces
 2. **Géolocalisation temps réel** - Tracking GPS du chauffeur
 3. **Paiement intégré** - Stripe/Mobile Money
 4. **Chat** - Communication Business ↔ Chauffeur
 5. **Historique/Analytics** - Rapports détaillés
+
+---
+
+## 🔔 Système de Notifications Push
+
+### Fonctionnement
+Les notifications push utilisent **Expo Push Notifications** (gratuit, sans Firebase).
+
+### Notifications Implémentées
+
+| Événement | Destinataire | Message |
+|-----------|--------------|---------|
+| Nouvelle livraison créée | Tous les chauffeurs validés | "🚚 Nouvelle livraison disponible !" |
+| Livraison acceptée | Commerce concerné | "✅ Livraison acceptée !" |
+| Colis récupéré | Commerce concerné | "📦 Colis récupéré !" |
+| Livraison terminée | Commerce concerné | "🎉 Livraison effectuée !" |
+
+### Architecture
+
+```
+Frontend (app/_layout.tsx)
+    └── usePushNotifications hook
+        ├── Demande permission notifications
+        ├── Obtient Expo Push Token
+        └── Envoie token au backend (POST /api/user/push-token)
+
+Backend (server.py)
+    ├── Stocke push_token dans users collection
+    └── Sur événements de livraison:
+        └── Envoie notification via Expo Push API
+            (https://exp.host/--/api/v2/push/send)
+```
+
+### Endpoints Notifications
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/api/user/push-token` | Enregistrer token push |
+| DELETE | `/api/user/push-token` | Supprimer token push |
 
 ---
 
