@@ -1394,6 +1394,10 @@ const styles = StyleSheet.create({
   modalActionBtnDelivery: {
     backgroundColor: COLORS.secondary,
   },
+  modalActionBtnCancel: {
+    backgroundColor: '#EF4444',
+    marginTop: 12,
+  },
   modalActionBtnText: {
     fontSize: 18,
     fontWeight: '700',
