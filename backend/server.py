@@ -228,6 +228,148 @@ class DeliveryRequestCreate(BaseModel):
 class DeliveryConfirmPhoto(BaseModel):
     photo: str  # base64
 
+class PushTokenRequest(BaseModel):
+    push_token: str
+
+# ========================
+# PUSH NOTIFICATIONS
+# ========================
+
+async def send_push_notification(push_tokens: List[str], title: str, body: str, data: dict = None):
+    """Send push notifications via Expo Push API"""
+    if not push_tokens:
+        logger.info("No push tokens to send notifications to")
+        return
+    
+    # Filter out None/empty tokens
+    valid_tokens = [t for t in push_tokens if t and t.startswith('ExponentPushToken')]
+    
+    if not valid_tokens:
+        logger.info("No valid Expo push tokens found")
+        return
+    
+    messages = []
+    for token in valid_tokens:
+        message = {
+            "to": token,
+            "sound": "default",
+            "title": title,
+            "body": body,
+            "priority": "high",
+            "channelId": "urgent",
+        }
+        if data:
+            message["data"] = data
+        messages.append(message)
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=messages,
+                headers={
+                    "Accept": "application/json",
+                    "Accept-Encoding": "gzip, deflate",
+                    "Content-Type": "application/json",
+                },
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"✅ Push notifications sent to {len(valid_tokens)} devices")
+                result = response.json()
+                # Log any errors
+                if "data" in result:
+                    for i, ticket in enumerate(result["data"]):
+                        if ticket.get("status") == "error":
+                            logger.error(f"Push error for token {i}: {ticket.get('message')}")
+            else:
+                logger.error(f"❌ Push notification failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"❌ Push notification error: {str(e)}")
+
+async def notify_drivers_new_delivery(delivery: dict):
+    """Notify all validated drivers about a new delivery"""
+    # Get all validated drivers with push tokens
+    drivers = await db.users.find(
+        {"role": "driver", "is_validated": True, "push_token": {"$exists": True, "$ne": None}},
+        {"push_token": 1}
+    ).to_list(1000)
+    
+    tokens = [d.get("push_token") for d in drivers if d.get("push_token")]
+    
+    if tokens:
+        await send_push_notification(
+            push_tokens=tokens,
+            title="🚚 Nouvelle livraison disponible !",
+            body=f"{delivery.get('item_description', 'Colis')} - {delivery.get('destination_area', '')} - {int(delivery.get('driver_earnings', 0))} F",
+            data={
+                "type": "new_delivery",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified {len(tokens)} drivers about new delivery {delivery.get('delivery_code')}")
+
+async def notify_business_delivery_accepted(delivery: dict):
+    """Notify business that their delivery was accepted"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1, "name": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="✅ Livraison acceptée !",
+            body=f"Un chauffeur a accepté votre livraison {delivery.get('delivery_code')}",
+            data={
+                "type": "delivery_accepted",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified business about accepted delivery {delivery.get('delivery_code')}")
+
+async def notify_business_delivery_picked_up(delivery: dict):
+    """Notify business that their delivery was picked up"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="📦 Colis récupéré !",
+            body=f"Le chauffeur a récupéré votre colis {delivery.get('delivery_code')}",
+            data={
+                "type": "delivery_picked_up",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+
+async def notify_business_delivery_completed(delivery: dict):
+    """Notify business that their delivery was completed"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="🎉 Livraison effectuée !",
+            body=f"Votre livraison {delivery.get('delivery_code')} a été livrée avec succès",
+            data={
+                "type": "delivery_completed",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified business about completed delivery {delivery.get('delivery_code')}")
+
 # ========================
 # AUTHENTICATION HELPERS
 # ========================
