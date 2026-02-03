@@ -1055,7 +1055,11 @@ async def accept_delivery(delivery_id: str, user: User = Depends(require_driver)
 
 @api_router.post("/driver/confirm-pickup/{delivery_id}")
 async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto, user: User = Depends(require_driver)):
-    """Confirm pickup with photo"""
+    """Confirm pickup with photo - PHOTO IS REQUIRED"""
+    # Check if photo is provided
+    if not data.photo or len(data.photo) < 100:
+        raise HTTPException(status_code=400, detail="La photo de récupération est obligatoire")
+    
     result = await db.delivery_requests.update_one(
         {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "accepted"},
         {"$set": {
@@ -1077,7 +1081,11 @@ async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto, user: Use
 
 @api_router.post("/driver/confirm-delivery/{delivery_id}")
 async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto, user: User = Depends(require_driver)):
-    """Confirm delivery with photo"""
+    """Confirm delivery with photo - PHOTO IS REQUIRED"""
+    # Check if photo is provided
+    if not data.photo or len(data.photo) < 100:
+        raise HTTPException(status_code=400, detail="La photo de livraison est obligatoire")
+    
     result = await db.delivery_requests.update_one(
         {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "pickup_confirmed"},
         {"$set": {
