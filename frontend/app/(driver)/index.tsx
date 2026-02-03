@@ -675,14 +675,15 @@ export default function DriverHome() {
         type="pickup"
       />
 
-      {/* Photo Capture Modal - Delivery */}
+      {/* Photo Capture Modal - Delivery (OPTIONAL) */}
       <PhotoCapture
         visible={showDeliveryPhotoModal}
         onClose={() => setShowDeliveryPhotoModal(false)}
         onCapture={handleDeliveryPhotoCapture}
+        onSkip={handleConfirmDeliveryWithoutPhoto}
         title="Photo de livraison"
-        subtitle="Prenez une photo comme preuve de livraison"
-        confirmButtonText="Confirmer la livraison"
+        subtitle="La photo est optionnelle mais recommandée"
+        confirmButtonText="Confirmer avec photo"
         type="delivery"
       />
     </View>
