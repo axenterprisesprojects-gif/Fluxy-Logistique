@@ -837,6 +837,30 @@ async def logout(request: Request, response: Response):
     return {"message": "Déconnexion réussie"}
 
 # ========================
+# USER ENDPOINTS
+# ========================
+
+@api_router.post("/user/push-token")
+async def register_push_token(data: PushTokenRequest, user: User = Depends(require_user)):
+    """Register push notification token for user"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"push_token": data.push_token}}
+    )
+    logger.info(f"📲 Push token registered for user {user.user_id} ({user.role})")
+    return {"message": "Token enregistré", "push_token": data.push_token}
+
+@api_router.delete("/user/push-token")
+async def remove_push_token(user: User = Depends(require_user)):
+    """Remove push notification token for user"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$unset": {"push_token": ""}}
+    )
+    logger.info(f"📲 Push token removed for user {user.user_id}")
+    return {"message": "Token supprimé"}
+
+# ========================
 # BUSINESS ENDPOINTS
 # ========================
 
