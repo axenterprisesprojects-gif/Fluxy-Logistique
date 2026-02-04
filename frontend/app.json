@@ -30,7 +30,6 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#2563EB"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.fluxylogistique.app",
       "permissions": [
         "android.permission.CAMERA",
