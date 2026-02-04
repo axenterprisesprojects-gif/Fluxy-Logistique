@@ -2,7 +2,7 @@
   "expo": {
     "name": "Fluxy Logistique",
     "slug": "fluxy-logistique",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "owner": "axenterprises",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
