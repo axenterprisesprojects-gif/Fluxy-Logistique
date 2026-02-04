@@ -16,10 +16,7 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/f3261443-ae67-494f-a854-cd498bee282b"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
+      "enabled": false
     },
     "ios": {
       "supportsTablet": true,
