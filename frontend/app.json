@@ -3,7 +3,6 @@
     "name": "Fluxy Logistique",
     "slug": "fluxy-logistique",
     "version": "1.0.9",
-    "owner": "axenterprises",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
