@@ -60,7 +60,8 @@
       "exclude": [
         "eslint",
         "eslint-config-expo",
-        "@types/react"
+        "@types/react",
+        "typescript"
       ]
     }
   },
