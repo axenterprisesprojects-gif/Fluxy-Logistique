@@ -57,7 +57,11 @@
   },
   "expo": {
     "install": {
-      "exclude": ["eslint", "eslint-config-expo", "@types/react"]
+      "exclude": [
+        "eslint",
+        "eslint-config-expo",
+        "@types/react"
+      ]
     }
   },
   "private": true
