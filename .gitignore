@@ -80,3 +80,7 @@ agenthub/agents/youtube/db
 android-sdk/
 # Environment files - DO NOT BLOCK for Emergent deployment
 # *.env
+-e 
+# Environment files
+*.env
+*.env.*
