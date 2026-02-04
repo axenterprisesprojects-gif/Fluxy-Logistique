@@ -340,7 +340,7 @@ DB_NAME="fluxy_logistique"
     "slug": "fluxy-logistique",
     "version": "1.0.3",
     "extra": {
-      "backendUrl": "https://logistix-fix.preview.emergentagent.com"
+      "backendUrl": "https://fluxy-build-fix.preview.emergentagent.com"
     },
     "android": {
       "package": "com.fluxylogistique.app"
@@ -401,9 +401,9 @@ eas build --platform ios
 
 | Environnement | URL |
 |---------------|-----|
-| **Preview Web** | https://logistix-fix.preview.emergentagent.com |
-| **Admin Panel** | https://logistix-fix.preview.emergentagent.com/admin-panel |
-| **API Base** | https://logistix-fix.preview.emergentagent.com/api |
+| **Preview Web** | https://fluxy-build-fix.preview.emergentagent.com |
+| **Admin Panel** | https://fluxy-build-fix.preview.emergentagent.com/admin-panel |
+| **API Base** | https://fluxy-build-fix.preview.emergentagent.com/api |
 
 ---
 

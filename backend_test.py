@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://logistix-fix.preview.emergentagent.com/api"
+BACKEND_URL = "https://fluxy-build-fix.preview.emergentagent.com/api"
 
 class QuickHaulTester:
     def __init__(self):
