@@ -128,24 +128,29 @@ export default function DriverProfile() {
     }
   };
 
-  const handleLogout = () => {
-    // BRUTAL LOGOUT - No async, no waiting, just DO IT
-    console.log('🔴 LOGOUT: Starting brutal logout...');
+  const handleLogout = async () => {
+    console.log('🔴 LOGOUT: Starting logout...');
     
-    // 1. Clear storage synchronously (fire and forget)
-    AsyncStorage.clear().catch(() => {});
-    AsyncStorage.removeItem('session_token').catch(() => {});
-    
-    // 2. Call context logout (fire and forget)
-    logout().catch(() => {});
-    
-    // 3. IMMEDIATE navigation - don't wait for anything
-    console.log('🔴 LOGOUT: Navigating NOW...');
-    
-    if (Platform.OS === 'web') {
-      window.location.href = '/';
-    } else {
-      // Use router.replace with immediate effect
+    try {
+      // 1. Clear storage first
+      await AsyncStorage.clear();
+      
+      // 2. Call context logout
+      await logout();
+      
+      console.log('🔴 LOGOUT: Navigating...');
+      
+      // 3. Navigate with a small delay to ensure state is cleared
+      setTimeout(() => {
+        if (Platform.OS === 'web') {
+          window.location.href = '/';
+        } else {
+          router.replace('/');
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation even on error
       router.replace('/');
     }
   };
