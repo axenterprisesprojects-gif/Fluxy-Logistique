@@ -1153,6 +1153,135 @@ async def driver_cancel_delivery(delivery_id: str, user: User = Depends(require_
 # ADMIN ENDPOINTS
 # ========================
 
+class TestNotificationRequest(BaseModel):
+    target: str  # "all_drivers", "all_businesses", or a specific user_id
+    title: str = "Test Notification"
+    message: str = "Ceci est une notification de test"
+
+@api_router.post("/admin/test-notification")
+async def admin_test_notification(data: TestNotificationRequest, user: User = Depends(require_admin)):
+    """Send a test push notification"""
+    tokens = []
+    target_info = ""
+    
+    if data.target == "all_drivers":
+        # Get all drivers with push tokens
+        drivers = await db.users.find(
+            {"role": "driver", "push_token": {"$exists": True, "$ne": None}},
+            {"push_token": 1, "name": 1}
+        ).to_list(100)
+        tokens = [d.get("push_token") for d in drivers if d.get("push_token")]
+        target_info = f"{len(tokens)} chauffeurs avec tokens"
+        
+    elif data.target == "all_businesses":
+        # Get all businesses with push tokens
+        businesses = await db.users.find(
+            {"role": "business", "push_token": {"$exists": True, "$ne": None}},
+            {"push_token": 1, "name": 1}
+        ).to_list(100)
+        tokens = [b.get("push_token") for b in businesses if b.get("push_token")]
+        target_info = f"{len(tokens)} commerces avec tokens"
+        
+    else:
+        # Specific user
+        target_user = await db.users.find_one(
+            {"user_id": data.target},
+            {"push_token": 1, "name": 1, "role": 1}
+        )
+        if target_user and target_user.get("push_token"):
+            tokens = [target_user.get("push_token")]
+            target_info = f"{target_user.get('name')} ({target_user.get('role')})"
+        else:
+            return {
+                "success": False,
+                "message": "Utilisateur non trouvé ou sans token push",
+                "tokens_found": 0
+            }
+    
+    if not tokens:
+        return {
+            "success": False,
+            "message": "Aucun token push trouvé pour cette cible",
+            "target": data.target,
+            "tokens_found": 0
+        }
+    
+    # Send the notification
+    await send_push_notification(
+        push_tokens=tokens,
+        title=data.title,
+        body=data.message,
+        data={"type": "test", "sent_by": user.user_id}
+    )
+    
+    logger.info(f"📲 Admin {user.user_id} sent test notification to {target_info}")
+    
+    return {
+        "success": True,
+        "message": f"Notification envoyée à {target_info}",
+        "tokens_found": len(tokens),
+        "target": data.target
+    }
+
+@api_router.get("/admin/push-tokens-status")
+async def admin_push_tokens_status(user: User = Depends(require_admin)):
+    """Get status of push tokens for all users"""
+    
+    # Drivers with tokens
+    drivers_with_token = await db.users.count_documents({
+        "role": "driver", 
+        "push_token": {"$exists": True, "$ne": None}
+    })
+    total_drivers = await db.users.count_documents({"role": "driver"})
+    
+    # Businesses with tokens
+    businesses_with_token = await db.users.count_documents({
+        "role": "business", 
+        "push_token": {"$exists": True, "$ne": None}
+    })
+    total_businesses = await db.users.count_documents({"role": "business"})
+    
+    # Get detailed list
+    drivers = await db.users.find(
+        {"role": "driver"},
+        {"name": 1, "push_token": 1, "is_validated": 1, "user_id": 1}
+    ).to_list(100)
+    
+    businesses = await db.users.find(
+        {"role": "business"},
+        {"name": 1, "business_name": 1, "push_token": 1, "user_id": 1}
+    ).to_list(100)
+    
+    return {
+        "summary": {
+            "drivers": {
+                "with_token": drivers_with_token,
+                "total": total_drivers,
+                "percentage": round(drivers_with_token / total_drivers * 100, 1) if total_drivers > 0 else 0
+            },
+            "businesses": {
+                "with_token": businesses_with_token,
+                "total": total_businesses,
+                "percentage": round(businesses_with_token / total_businesses * 100, 1) if total_businesses > 0 else 0
+            }
+        },
+        "drivers": [
+            {
+                "user_id": d.get("user_id"),
+                "name": d.get("name"),
+                "has_token": bool(d.get("push_token")),
+                "is_validated": d.get("is_validated", False)
+            } for d in drivers
+        ],
+        "businesses": [
+            {
+                "user_id": b.get("user_id"),
+                "name": b.get("name") or b.get("business_name"),
+                "has_token": bool(b.get("push_token"))
+            } for b in businesses
+        ]
+    }
+
 @api_router.get("/admin/dashboard")
 async def admin_dashboard(user: User = Depends(require_admin)):
     """Get admin dashboard stats"""
