@@ -575,9 +575,9 @@ const Footer = () => {
           <div>
             <h4 className="font-heading text-lg font-bold uppercase tracking-tight mb-4">Légal</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Conditions d'utilisation</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Politique de confidentialité</a></li>
-              <li><a href="/api/admin" className="text-slate-400 hover:text-white transition-colors">Administration</a></li>
+              <li><a href="/conditions" className="text-slate-400 hover:text-white transition-colors">Conditions d'utilisation</a></li>
+              <li><a href="/confidentialite" className="text-slate-400 hover:text-white transition-colors">Politique de confidentialité</a></li>
+              <li><a href={`${BACKEND_URL}/api/admin`} className="text-slate-400 hover:text-white transition-colors">Administration</a></li>
             </ul>
           </div>
         </div>
