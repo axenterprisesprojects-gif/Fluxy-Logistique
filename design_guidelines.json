@@ -1,0 +1,122 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "theme": "Industrial Modernist",
+    "tone": "Professional, Reliable, Robust, Modern",
+    "context": "B2B Logistics in Congo/Africa"
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Barlow Condensed, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "All section titles, hero headings, and major callouts. MUST be uppercase for top-level headings."
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Paragraphs, labels, and UI text."
+    },
+    "instructions": "Import 'Barlow Condensed' from Google Fonts. Use 'tracking-tight' for all headings."
+  },
+  "colors": {
+    "primary": {
+      "name": "Fluxy Blue",
+      "hex": "#2563EB",
+      "tailwind": "bg-blue-600",
+      "usage": "Primary buttons, active states, key brand elements."
+    },
+    "secondary": {
+      "name": "Slate Obsidian",
+      "hex": "#0F172A",
+      "tailwind": "bg-slate-900",
+      "usage": "Headings, footer background, strong contrast elements."
+    },
+    "accent": {
+      "name": "Safety Amber",
+      "hex": "#F59E0B",
+      "tailwind": "bg-amber-500",
+      "usage": "Call to action highlights, 'New' badges, delivery status icons. Use sparingly."
+    },
+    "background": {
+      "name": "Industrial White",
+      "hex": "#F8FAFC",
+      "tailwind": "bg-slate-50",
+      "usage": "Page background."
+    },
+    "surface": {
+      "name": "Pure White",
+      "hex": "#FFFFFF",
+      "tailwind": "bg-white",
+      "usage": "Cards, form backgrounds."
+    }
+  },
+  "layout": {
+    "spacing": "Generous. Use p-8 to p-24 for sections. Gap-8 for grids.",
+    "grid_system": "Bento Grid for features. Asymmetrical split for Hero.",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+  },
+  "components": {
+    "buttons": {
+      "style": "Sharp corners or slightly rounded (rounded-md). High contrast.",
+      "primary": "bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase tracking-wide py-4 px-8",
+      "secondary": "bg-white border-2 border-slate-200 hover:border-blue-600 text-slate-900 font-semibold py-4 px-8"
+    },
+    "cards": {
+      "style": "Flat, white background, 1px border (border-slate-200). Hover: shadow-xl and border-blue-600 transition-all duration-300.",
+      "content_padding": "p-8"
+    },
+    "inputs": {
+      "style": "bg-slate-50 border-slate-200 focus:border-blue-600 focus:ring-blue-600 rounded-md h-12"
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Subtle SVG dot pattern or map topography in background sections (opacity 0.05).",
+    "shadows": "shadow-lg for floating elements. shadow-sm for cards.",
+    "icons": "Lucide React. Use stroke-width={1.5} for a clean, technical look."
+  },
+  "images": {
+    "hero_bg": {
+      "url": "https://images.unsplash.com/photo-1645888921404-604ed47d6be1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwzfHxBZnJpY2FuJTIwZGVsaXZlcnklMjBkcml2ZXIlMjB0cnVjayUyMGxvZ2lzdGljc3xlbnwwfHx8fDE3NzAyOTA3ODN8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Heavy cargo truck on African road",
+      "usage": "Hero section right side or background with overlay."
+    },
+    "app_context": {
+      "url": "https://images.pexels.com/photos/5077067/pexels-photo-5077067.jpeg",
+      "alt": "Delivery driver using app",
+      "usage": "Driver section or 'How it works' visual."
+    },
+    "warehouse": {
+      "url": "https://images.unsplash.com/photo-1768796373907-418e59aee549?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHwzfHxjYXJkYm9hcmQlMjBib3hlcyUyMHdhcmVob3VzZSUyMGxvZ2lzdGljc3xlbnwwfHx8fDE3NzAyOTA3OTB8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Professional warehouse operations",
+      "usage": "Business features section."
+    }
+  },
+  "sections": {
+    "hero": {
+      "type": "Split Screen",
+      "content": "Left: Headline 'La Logistique B2B Simplifiée pour le Congo'. Subhead: 'Transportez vos marchandises lourdes en toute sécurité.'. CTAs: 'Télécharger l'App' (Primary), 'Devenir Chauffeur' (Secondary). Right: Hero Image."
+    },
+    "features": {
+      "type": "Bento Grid",
+      "items": [
+        {"title": "Suivi en Temps Réel", "desc": "Visualisez votre cargaison à chaque étape.", "col_span": "col-span-1 md:col-span-2"},
+        {"title": "Flotte Certifiée", "desc": "Camions inspectés et chauffeurs vérifiés.", "col_span": "col-span-1"},
+        {"title": "Prix Transparents", "desc": "Devis instantané sans frais cachés.", "col_span": "col-span-1"},
+        {"title": "Support 24/7", "desc": "Une équipe dédiée à votre écoute.", "col_span": "col-span-1 md:col-span-2"}
+      ]
+    },
+    "how_it_works": {
+      "type": "3-Step Process",
+      "steps": ["Commandez", "Suivez", "Réceptionnez"]
+    }
+  },
+  "universal_guidelines": [
+    "Do not use gradients for text.",
+    "Ensure all text has sufficient contrast (APCA standards).",
+    "Use 'data-testid' on all interactive elements.",
+    "Mobile-first design is mandatory.",
+    "No 'Inter' font for headings.",
+    "Use 'sonner' for toasts.",
+    "Use 'lucide-react' for icons."
+  ]
+}
