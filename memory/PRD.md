@@ -1,65 +1,65 @@
-# Fluxy Logistique Backend - PRD
+# Fluxy Logistique - PRD
 
 ## Project Overview
-Backend API for Fluxy Logistique - a logistics/delivery management platform for heavy items.
+Plateforme de livraison B2B au Congo/Afrique pour articles lourds (meubles, électroménager, matériaux de construction).
 
 ## Tech Stack
 - **Backend**: FastAPI (Python)
+- **Frontend**: React + Tailwind CSS
 - **Database**: MongoDB (Emergent integrated)
 - **Authentication**: Session-based tokens
 
-## Core Features Implemented
-- ✅ User Authentication (Admin, Business, Driver)
-- ✅ Session management with tokens
-- ✅ Business registration and profile management
-- ✅ Driver registration and validation workflow
-- ✅ Delivery request creation and management
-- ✅ Admin dashboard with statistics
-- ✅ Pricing rules management
-- ✅ Commission settings
-- ✅ Push notification support (Expo)
-- ✅ Admin panel (HTML)
+## URLs Configurées
+| Domaine | Usage | Statut |
+|---------|-------|--------|
+| api.fluxy-logistique.com | API Backend | ✅ Actif |
+| www.fluxy-logistique.com | Landing Page | ⏳ En attente SSL |
+| fluxy-mongo-api.preview.emergentagent.com | Preview URL | ✅ Actif |
 
-## API Endpoints
-### Auth
-- POST /api/auth/admin/login
-- POST /api/auth/business/register
-- POST /api/auth/business/login
-- POST /api/auth/driver/register
-- POST /api/auth/driver/login
-- GET /api/auth/me
-- POST /api/auth/logout
+## Features Implementées
 
-### Business
-- PUT /api/business/profile
-- POST /api/business/delivery
-- GET /api/business/deliveries
+### Backend API (100% fonctionnel)
+- ✅ Authentification (Admin, Business, Driver)
+- ✅ Gestion des livraisons
+- ✅ Validation des chauffeurs
+- ✅ Système de tarification
+- ✅ Notifications push (Expo)
+- ✅ Panel admin HTML
 
-### Driver
-- PUT /api/driver/profile
-- GET /api/driver/available-jobs
-- GET /api/driver/my-jobs
-- POST /api/driver/accept/{delivery_id}
-- POST /api/driver/confirm-pickup/{delivery_id}
-- POST /api/driver/confirm-delivery/{delivery_id}
-- POST /api/driver/cancel/{delivery_id}
+### Landing Page (www.fluxy-logistique.com)
+- ✅ Hero Section avec stats et preview app
+- ✅ Section Fonctionnalités (Bento Grid)
+- ✅ Section "Comment ça marche" (3 étapes)
+- ✅ Section Pour Entreprises / Chauffeurs
+- ✅ Section Téléchargement (App Store/Google Play)
+- ✅ Section Contact avec formulaire
+- ✅ Footer avec navigation
+- ✅ Design responsive mobile
+- ✅ Navigation fixe avec scroll
 
-### Admin
-- GET /api/admin/dashboard
-- GET /api/admin/deliveries
-- GET /api/admin/drivers
-- GET /api/admin/businesses
-- GET /api/admin/pricing
-- POST /api/admin/pricing
-- PUT /api/admin/commission
+### Panel Admin (/api/admin)
+- ✅ Connexion email/password
+- ✅ Connexion Google OAuth
+- ✅ Dashboard statistiques
+- ✅ Gestion des livraisons
+- ✅ Gestion des chauffeurs
+- ✅ Gestion des entreprises
+- ✅ Configuration tarification
 
-## Configuration
-- DB_NAME: fluxy_logistique
-- CORS: * (for mobile app)
-- Admin: admin@fluxylogistique.com / admin123
+## Configuration Admin
+- Email: admin@fluxylogistique.com
+- Password: admin123
 
-## Deployment
-- API URL: https://fluxy-mongo-api.preview.emergentagent.com
-- Custom domain target: api.fluxy-logistique.com
+## DNS Configuration (OVH)
+```
+api.fluxy-logistique.com → CNAME → fluxy-mongo-api.emergent.host ✅
+www.fluxy-logistique.com → CNAME → fluxy-mongo-api.emergent.host ⏳
+```
 
-## Date: February 2026
+## Next Action Items
+1. Configurer le custom domain www.fluxy-logistique.com dans l'interface Emergent
+2. Attendre le provisionnement du certificat SSL
+3. Ajouter les vrais liens App Store / Google Play
+4. Configurer le vrai numéro de téléphone de contact
+
+## Date: Février 2026
