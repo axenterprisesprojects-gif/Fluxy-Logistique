@@ -966,7 +966,8 @@
                 'deliveries': 'Livraisons',
                 'drivers': 'Chauffeurs',
                 'businesses': 'Entreprises',
-                'pricing': 'Tarification'
+                'pricing': 'Tarification',
+                'notifications': 'Notifications'
             };
             document.getElementById('pageTitle').textContent = titles[page];
             
@@ -975,6 +976,7 @@
             if (page === 'drivers') loadDrivers();
             if (page === 'businesses') loadBusinesses();
             if (page === 'pricing') loadPricing();
+            if (page === 'notifications') loadNotificationsStatus();
         }
         
         async function loadDashboardData() {
