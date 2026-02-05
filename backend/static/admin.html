@@ -776,6 +776,43 @@
             }
         }
         
+        async function loginWithEmail() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            
+            if (!email || !password) {
+                errorEl.textContent = 'Veuillez remplir tous les champs';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/auth/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('admin_session_token', data.session_token);
+                    sessionToken = data.session_token;
+                    currentUser = data.user;
+                    errorEl.style.display = 'none';
+                    showDashboard();
+                } else {
+                    const error = await res.json();
+                    errorEl.textContent = error.detail || 'Email ou mot de passe incorrect';
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+                errorEl.textContent = 'Erreur de connexion au serveur';
+                errorEl.style.display = 'block';
+            }
+        }
+        
         function loginWithGoogle() {
             const redirectUrl = window.location.origin + '/api/admin';
             localStorage.setItem('pending_admin_auth', 'true');
