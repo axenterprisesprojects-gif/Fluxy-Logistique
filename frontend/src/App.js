@@ -58,7 +58,7 @@ const Navigation = () => {
             <a href="#how-it-works" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Comment ça marche</a>
             <a href="#download" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Télécharger</a>
             <a href="#contact" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Contact</a>
-            <a href="/api/admin" className="btn-primary block text-center">Admin</a>
+            <a href={`${BACKEND_URL}/api/admin`} className="btn-primary block text-center">Admin</a>
           </div>
         )}
       </div>
