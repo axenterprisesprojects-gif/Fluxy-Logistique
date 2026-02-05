@@ -721,6 +721,76 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Notifications Page -->
+            <div id="page-notifications" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📊 État des tokens push</h2>
+                        <button class="btn btn-outline" onclick="loadNotificationsStatus()">Actualiser</button>
+                    </div>
+                    <div class="stats-grid" style="margin-top: 16px;">
+                        <div class="stat-card success">
+                            <div class="stat-label">Chauffeurs avec token</div>
+                            <div class="stat-value" id="driversWithToken">0/0</div>
+                        </div>
+                        <div class="stat-card info">
+                            <div class="stat-label">Commerces avec token</div>
+                            <div class="stat-value" id="businessesWithToken">0/0</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 24px; margin-bottom: 12px;">Chauffeurs</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Token Push</th>
+                                <th>Validé</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driversTokenTable"></tbody>
+                    </table>
+                    
+                    <h3 style="margin-top: 24px; margin-bottom: 12px;">Commerces</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Token Push</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="businessesTokenTable"></tbody>
+                    </table>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🔔 Envoyer une notification test</h2>
+                    </div>
+                    <div class="input-group">
+                        <label>Destinataire</label>
+                        <select id="notifTarget" style="width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 8px;">
+                            <option value="all_drivers">Tous les chauffeurs</option>
+                            <option value="all_businesses">Tous les commerces</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Titre</label>
+                        <input type="text" id="notifTitle" value="Test Notification" placeholder="Titre de la notification">
+                    </div>
+                    <div class="input-group">
+                        <label>Message</label>
+                        <input type="text" id="notifMessage" value="Ceci est une notification de test 🎉" placeholder="Corps du message">
+                    </div>
+                    <button class="btn btn-primary" onclick="sendTestNotification()" style="margin-top: 8px;">
+                        📤 Envoyer la notification
+                    </button>
+                    <div id="notifResult" style="margin-top: 16px; padding: 12px; border-radius: 8px; display: none;"></div>
+                </div>
+            </div>
         </main>
     </div>
     
