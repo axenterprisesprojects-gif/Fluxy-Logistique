@@ -1,23 +1,37 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import httpx
+import math
+from passlib.context import CryptContext
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'fluxy_logistique')]
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -25,64 +39,1411 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
-app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ========================
+# STARTUP INITIALIZATION (Production-Ready)
+# ========================
+@app.on_event("startup")
+async def startup_init():
+    """
+    Initialize default admin account on startup.
+    This ONLY creates accounts if they don't exist - never overwrites existing data.
+    Safe for production use.
+    """
+    logger.info("🚀 Starting Fluxy Logistique Backend...")
+    
+    # Check if admin exists
+    admin_exists = await db.users.find_one({"role": "admin"})
+    if not admin_exists:
+        logger.info("📌 No admin found - creating default admin account...")
+        admin_hash = hash_password("admin123")
+        await db.users.insert_one({
+            "user_id": f"admin_{uuid.uuid4().hex[:8]}",
+            "email": "admin@fluxylogistique.com",
+            "password_hash": admin_hash,
+            "name": "Administrateur",
+            "role": "admin",
+            "is_validated": True,
+            "created_at": datetime.utcnow().isoformat()
+        })
+        logger.info("✅ Default admin created: admin@fluxylogistique.com / admin123")
+    else:
+        logger.info("✅ Admin account exists - skipping initialization")
+    
+    # Log database stats
+    users_count = await db.users.count_documents({})
+    deliveries_count = await db.delivery_requests.count_documents({})
+    logger.info(f"📊 Database stats: {users_count} users, {deliveries_count} deliveries")
+    logger.info("✅ Fluxy Logistique Backend ready!")
+
+# ========================
+# MODELS
+# ========================
+
+# User Models
+class User(BaseModel):
+    user_id: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    name: str
+    picture: Optional[str] = None
+    role: str  # business, driver, admin
+    created_at: datetime
+    is_validated: bool = False
+    # Business specific
+    business_name: Optional[str] = None
+    business_address: Optional[str] = None
+    business_lat: Optional[float] = None
+    business_lng: Optional[float] = None
+    # Driver specific
+    vehicle_type: Optional[str] = None
+    vehicle_plate: Optional[str] = None
+    vehicle_brand: Optional[str] = None
+    accepted_item_types: Optional[List[str]] = []
+    refused_item_types: Optional[List[str]] = []
+    documents: Optional[List[dict]] = []
+
+class BusinessRegister(BaseModel):
+    business_name: str
+    business_address: str
+    business_lat: Optional[float] = None
+    business_lng: Optional[float] = None
+
+class DriverLogin(BaseModel):
+    phone: str
+    password: str
+
+class DriverRegisterRequest(BaseModel):
+    phone: str
+    password: str
+    name: str
+
+class DriverProfile(BaseModel):
+    name: str
+    vehicle_type: str
+    vehicle_plate: str
+    vehicle_brand: str
+    accepted_item_types: List[str] = []
+    refused_item_types: List[str] = []
+
+class DriverDocument(BaseModel):
+    document_type: str  # license, insurance, vehicle_registration
+    document_image: str  # base64
+
+# Business Auth Models
+class BusinessRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    business_name: str
+    business_address: str
+
+class BusinessLoginRequest(BaseModel):
+    email: str
+    password: str
+
+# Session Models
+class UserSession(BaseModel):
+    session_id: str
+    user_id: str
+    session_token: str
+    expires_at: datetime
+    created_at: datetime
+
+class SessionDataResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    session_token: str
+
+# Pricing Models
+class PricingRule(BaseModel):
+    rule_id: str = Field(default_factory=lambda: f"rule_{uuid.uuid4().hex[:12]}")
+    min_distance: float  # km
+    max_distance: float  # km
+    price: float  # in local currency (F)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PricingRuleCreate(BaseModel):
+    min_distance: float
+    max_distance: float
+    price: float
+
+class PlatformSettings(BaseModel):
+    commission_percentage: float = 15.0  # Default 15%
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Delivery Models
+class DeliveryRequest(BaseModel):
+    delivery_id: str = Field(default_factory=lambda: f"del_{uuid.uuid4().hex[:12]}")
+    delivery_code: str = Field(default_factory=lambda: f"QH{uuid.uuid4().hex[:6].upper()}")  # Code unique visible
+    business_id: str
+    business_name: str
+    pickup_address: str
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    destination_area: str
+    destination_lat: Optional[float] = None
+    destination_lng: Optional[float] = None
+    # New fields
+    customer_name: str = ""
+    customer_phone: str = ""
+    item_description: str = ""
+    # Legacy field kept for compatibility
+    item_type: Optional[str] = None
+    time_slot: Optional[str] = None  # ASAP, 1-2h, 2-4h, 4-8h
+    distance_km: float = 0.0
+    total_price: float = 0.0
+    commission: float = 0.0
+    driver_earnings: float = 0.0
+    status: str = "pending"  # pending, accepted, pickup_confirmed, delivered, cancelled
+    driver_id: Optional[str] = None
+    driver_name: Optional[str] = None
+    pickup_photo: Optional[str] = None
+    delivery_photo: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    accepted_at: Optional[datetime] = None
+    pickup_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
+
+class DeliveryRequestCreate(BaseModel):
+    customer_name: str
+    customer_phone: str
+    item_description: str
+    destination_area: str
+    destination_lat: Optional[float] = None
+    destination_lng: Optional[float] = None
+    pickup_time_slot: Optional[str] = None  # e.g., "10h-11h"
+    delivery_time_slot: Optional[str] = None  # e.g., "10h-12h"
+    total_price: Optional[float] = None  # User-defined price
+
+class DeliveryConfirmPhoto(BaseModel):
+    photo: str  # base64
+
+class PushTokenRequest(BaseModel):
+    push_token: str
+
+# ========================
+# PUSH NOTIFICATIONS
+# ========================
+
+async def send_push_notification(push_tokens: List[str], title: str, body: str, data: dict = None):
+    """Send push notifications via Expo Push API"""
+    if not push_tokens:
+        logger.info("No push tokens to send notifications to")
+        return
+    
+    # Filter out None/empty tokens
+    valid_tokens = [t for t in push_tokens if t and t.startswith('ExponentPushToken')]
+    
+    if not valid_tokens:
+        logger.info("No valid Expo push tokens found")
+        return
+    
+    messages = []
+    for token in valid_tokens:
+        message = {
+            "to": token,
+            "sound": "default",
+            "title": title,
+            "body": body,
+            "priority": "high",
+            "channelId": "urgent",
+        }
+        if data:
+            message["data"] = data
+        messages.append(message)
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=messages,
+                headers={
+                    "Accept": "application/json",
+                    "Accept-Encoding": "gzip, deflate",
+                    "Content-Type": "application/json",
+                },
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"✅ Push notifications sent to {len(valid_tokens)} devices")
+                result = response.json()
+                # Log any errors
+                if "data" in result:
+                    for i, ticket in enumerate(result["data"]):
+                        if ticket.get("status") == "error":
+                            logger.error(f"Push error for token {i}: {ticket.get('message')}")
+            else:
+                logger.error(f"❌ Push notification failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"❌ Push notification error: {str(e)}")
+
+async def notify_drivers_new_delivery(delivery: dict):
+    """Notify all validated drivers about a new delivery"""
+    # Get all validated drivers with push tokens
+    drivers = await db.users.find(
+        {"role": "driver", "is_validated": True, "push_token": {"$exists": True, "$ne": None}},
+        {"push_token": 1}
+    ).to_list(1000)
+    
+    tokens = [d.get("push_token") for d in drivers if d.get("push_token")]
+    
+    if tokens:
+        await send_push_notification(
+            push_tokens=tokens,
+            title="🚚 Nouvelle livraison disponible !",
+            body=f"{delivery.get('item_description', 'Colis')} - {delivery.get('destination_area', '')} - {int(delivery.get('driver_earnings', 0))} F",
+            data={
+                "type": "new_delivery",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified {len(tokens)} drivers about new delivery {delivery.get('delivery_code')}")
+
+async def notify_business_delivery_accepted(delivery: dict):
+    """Notify business that their delivery was accepted"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1, "name": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="✅ Livraison acceptée !",
+            body=f"Un chauffeur a accepté votre livraison {delivery.get('delivery_code')}",
+            data={
+                "type": "delivery_accepted",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified business about accepted delivery {delivery.get('delivery_code')}")
+
+async def notify_business_delivery_picked_up(delivery: dict):
+    """Notify business that their delivery was picked up"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="📦 Colis récupéré !",
+            body=f"Le chauffeur a récupéré votre colis {delivery.get('delivery_code')}",
+            data={
+                "type": "delivery_picked_up",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+
+async def notify_business_delivery_completed(delivery: dict):
+    """Notify business that their delivery was completed"""
+    business = await db.users.find_one(
+        {"user_id": delivery.get("business_id")},
+        {"push_token": 1}
+    )
+    
+    if business and business.get("push_token"):
+        await send_push_notification(
+            push_tokens=[business.get("push_token")],
+            title="🎉 Livraison effectuée !",
+            body=f"Votre livraison {delivery.get('delivery_code')} a été livrée avec succès",
+            data={
+                "type": "delivery_completed",
+                "delivery_id": delivery.get("delivery_id"),
+                "delivery_code": delivery.get("delivery_code")
+            }
+        )
+        logger.info(f"📲 Notified business about completed delivery {delivery.get('delivery_code')}")
+
+# ========================
+# AUTHENTICATION HELPERS
+# ========================
+
+async def get_current_user(request: Request) -> Optional[User]:
+    """Get current user from session token (cookie or header)"""
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header.split(" ")[1]
+    
+    if not session_token:
+        return None
+    
+    session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+    if not session:
+        return None
+    
+    # Check expiration with timezone awareness
+    expires_at = session["expires_at"]
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= datetime.now(timezone.utc):
+        return None
+    
+    user_doc = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+    if user_doc:
+        return User(**user_doc)
+    return None
+
+async def require_user(request: Request) -> User:
+    """Require authenticated user"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    return user
+
+async def require_business(request: Request) -> User:
+    """Require business user"""
+    user = await require_user(request)
+    if user.role != "business":
+        raise HTTPException(status_code=403, detail="Accès réservé aux entreprises")
+    return user
+
+async def require_driver(request: Request) -> User:
+    """Require driver user"""
+    user = await require_user(request)
+    if user.role != "driver":
+        raise HTTPException(status_code=403, detail="Accès réservé aux chauffeurs")
+    return user
+
+async def require_admin(request: Request) -> User:
+    """Require admin user"""
+    user = await require_user(request)
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    return user
+
+# ========================
+# UTILITY FUNCTIONS
+# ========================
+
+def calculate_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Calculate distance between two points using Haversine formula (in km)"""
+    if not all([lat1, lng1, lat2, lng2]):
+        return 5.0  # Default distance if coordinates not provided
+    
+    R = 6371  # Earth's radius in kilometers
+    
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lng = math.radians(lng2 - lng1)
+    
+    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lng/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return round(R * c, 2)
+
+async def calculate_price(distance_km: float) -> dict:
+    """Calculate price based on distance and pricing rules"""
+    # Get pricing rules sorted by min_distance
+    rules = await db.pricing_rules.find({}, {"_id": 0}).sort("min_distance", 1).to_list(100)
+    
+    # Default price if no rules
+    if not rules:
+        base_price = 10000  # Default price
+    else:
+        # Find matching rule
+        base_price = 10000
+        for rule in rules:
+            if rule["min_distance"] <= distance_km < rule["max_distance"]:
+                base_price = rule["price"]
+                break
+            elif distance_km >= rule["max_distance"]:
+                base_price = rule["price"]  # Use highest rule
+    
+    # Get commission percentage
+    settings = await db.platform_settings.find_one({"setting_type": "commission"}, {"_id": 0})
+    commission_pct = settings.get("commission_percentage", 15.0) if settings else 15.0
+    
+    commission = round(base_price * commission_pct / 100, 0)
+    driver_earnings = base_price - commission
+    
+    return {
+        "total_price": base_price,
+        "commission": commission,
+        "driver_earnings": driver_earnings
+    }
+
+# ========================
+# AUTH ENDPOINTS
+# ========================
+
+@api_router.post("/auth/google/callback")
+async def google_auth_callback(request: Request, response: Response):
+    """Exchange session_id for session data from Emergent Auth"""
+    body = await request.json()
+    session_id = body.get("session_id")
+    role = body.get("role", "business")  # business or admin
+    
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id requis")
+    
+    # Exchange session_id with Emergent Auth
+    async with httpx.AsyncClient() as client_http:
+        resp = await client_http.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": session_id}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=401, detail="Session invalide")
+        
+        user_data = resp.json()
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": user_data["email"]}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+        # Update role if admin
+        if role == "admin" and existing_user.get("role") != "admin":
+            await db.users.update_one(
+                {"user_id": user_id},
+                {"$set": {"role": role}}
+            )
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        new_user = {
+            "user_id": user_id,
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "picture": user_data.get("picture"),
+            "role": role,
+            "is_validated": True if role == "business" else False,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.users.insert_one(new_user)
+    
+    # Create session
+    session_token = user_data["session_token"]
+    from datetime import timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Get updated user
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    
+    return {"user": user, "session_token": session_token}
+
+@api_router.post("/auth/driver/login")
+async def driver_login(data: DriverLogin, response: Response):
+    """Login driver with phone and password"""
+    phone = data.phone.strip()
+    
+    # Check if driver exists
+    existing_driver = await db.users.find_one({"phone": phone, "role": "driver"}, {"_id": 0})
+    
+    if not existing_driver:
+        raise HTTPException(status_code=401, detail="Numéro de téléphone ou mot de passe incorrect")
+    
+    # Verify password
+    if not existing_driver.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Mot de passe non configuré")
+    
+    if not verify_password(data.password, existing_driver["password_hash"]):
+        raise HTTPException(status_code=401, detail="Numéro de téléphone ou mot de passe incorrect")
+    
+    user_id = existing_driver["user_id"]
+    
+    # Create session
+    session_token = f"driver_session_{uuid.uuid4().hex}"
+    from datetime import timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": driver, "session_token": session_token}
+
+@api_router.post("/auth/driver/register")
+async def driver_register(data: DriverRegisterRequest, response: Response):
+    """Register a new driver with phone and password"""
+    phone = data.phone.strip()
+    
+    # Check if phone already exists
+    existing_driver = await db.users.find_one({"phone": phone}, {"_id": 0})
+    if existing_driver:
+        raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé")
+    
+    # Create new driver
+    user_id = f"driver_{uuid.uuid4().hex[:12]}"
+    password_hash = hash_password(data.password)
+    
+    new_driver = {
+        "user_id": user_id,
+        "phone": phone,
+        "password_hash": password_hash,
+        "name": data.name.strip(),
+        "role": "driver",
+        "is_validated": False,
+        "created_at": datetime.now(timezone.utc),
+        "accepted_item_types": [],
+        "refused_item_types": [],
+        "documents": []
+    }
+    await db.users.insert_one(new_driver)
+    
+    # Create session
+    session_token = f"driver_session_{uuid.uuid4().hex}"
+    from datetime import timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": driver, "session_token": session_token}
+
+@api_router.post("/auth/business/register")
+async def business_register(data: BusinessRegisterRequest, response: Response):
+    """Register a new business with email/password"""
+    email = data.email.strip().lower()
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+    
+    # Validate password
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    # Create new business user
+    user_id = f"business_{uuid.uuid4().hex[:12]}"
+    hashed_pw = hash_password(data.password)
+    
+    new_user = {
+        "user_id": user_id,
+        "email": email,
+        "password_hash": hashed_pw,
+        "name": data.name.strip(),
+        "role": "business",
+        "is_validated": True,
+        "business_name": data.business_name.strip(),
+        "business_address": data.business_address.strip(),
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.users.insert_one(new_user)
+    
+    # Create session
+    session_token = f"business_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
+@api_router.post("/auth/business/login")
+async def business_login(data: BusinessLoginRequest, response: Response):
+    """Login business with email/password"""
+    email = data.email.strip().lower()
+    
+    # Find user
+    user_doc = await db.users.find_one({"email": email, "role": "business"})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    # Verify password
+    if not user_doc.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Ce compte utilise la connexion Google")
+    
+    if not verify_password(data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    user_id = user_doc["user_id"]
+    
+    # Create session
+    session_token = f"business_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
+@api_router.post("/auth/admin/login")
+async def admin_login(data: BusinessLoginRequest, response: Response):
+    """Login admin with email/password"""
+    email = data.email.strip().lower()
+    
+    # Find admin user
+    user_doc = await db.users.find_one({"email": email, "role": "admin"})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    # Verify password
+    if not user_doc.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Mot de passe non configuré")
+    
+    if not verify_password(data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    user_id = user_doc["user_id"]
+    
+    # Create session
+    session_token = f"admin_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user without password
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"user": user, "session_token": session_token}
+
+@api_router.get("/auth/me")
+async def get_me(user: User = Depends(require_user)):
+    """Get current user data"""
+    return user
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Logout user"""
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        await db.user_sessions.delete_many({"session_token": session_token})
+    
+    response.delete_cookie(key="session_token", path="/")
+    return {"message": "Déconnexion réussie"}
+
+# ========================
+# USER ENDPOINTS
+# ========================
+
+@api_router.post("/user/push-token")
+async def register_push_token(data: PushTokenRequest, user: User = Depends(require_user)):
+    """Register push notification token for user"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"push_token": data.push_token}}
+    )
+    logger.info(f"📲 Push token registered for user {user.user_id} ({user.role})")
+    return {"message": "Token enregistré", "push_token": data.push_token}
+
+@api_router.delete("/user/push-token")
+async def remove_push_token(user: User = Depends(require_user)):
+    """Remove push notification token for user"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$unset": {"push_token": ""}}
+    )
+    logger.info(f"📲 Push token removed for user {user.user_id}")
+    return {"message": "Token supprimé"}
+
+# ========================
+# BUSINESS ENDPOINTS
+# ========================
+
+@api_router.put("/business/profile")
+async def update_business_profile(data: BusinessRegister, user: User = Depends(require_business)):
+    """Update business profile"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "business_name": data.business_name,
+            "business_address": data.business_address,
+            "business_lat": data.business_lat,
+            "business_lng": data.business_lng
+        }}
+    )
+    
+    updated_user = await db.users.find_one({"user_id": user.user_id}, {"_id": 0})
+    return updated_user
+
+@api_router.post("/business/delivery")
+async def create_delivery(data: DeliveryRequestCreate, user: User = Depends(require_business)):
+    """Create a new delivery request"""
+    # Check if business profile is complete
+    if not user.business_address:
+        raise HTTPException(status_code=400, detail="Veuillez compléter votre profil d'entreprise")
+    
+    # Calculate distance
+    distance = calculate_distance(
+        user.business_lat or 0, user.business_lng or 0,
+        data.destination_lat or 0, data.destination_lng or 0
+    )
+    
+    # Use user-defined price if provided, otherwise calculate
+    if data.total_price and data.total_price > 0:
+        total_price = data.total_price
+        # Get commission percentage
+        settings = await db.platform_settings.find_one({"setting_type": "commission"})
+        commission_pct = settings.get("commission_percentage", 15.0) if settings else 15.0
+        commission = total_price * (commission_pct / 100)
+        driver_earnings = total_price - commission
+    else:
+        pricing = await calculate_price(distance)
+        total_price = pricing["total_price"]
+        commission = pricing["commission"]
+        driver_earnings = pricing["driver_earnings"]
+    
+    delivery = DeliveryRequest(
+        business_id=user.user_id,
+        business_name=user.business_name or user.name,
+        pickup_address=user.business_address,
+        pickup_lat=user.business_lat,
+        pickup_lng=user.business_lng,
+        destination_area=data.destination_area,
+        destination_lat=data.destination_lat,
+        destination_lng=data.destination_lng,
+        customer_name=data.customer_name,
+        customer_phone=data.customer_phone,
+        item_description=data.item_description,
+        time_slot=data.pickup_time_slot,  # Store pickup time slot
+        distance_km=distance,
+        total_price=total_price,
+        commission=commission,
+        driver_earnings=driver_earnings
+    )
+    
+    # Store delivery time slot in the document
+    delivery_dict = delivery.dict()
+    delivery_dict["pickup_time_slot"] = data.pickup_time_slot
+    delivery_dict["delivery_time_slot"] = data.delivery_time_slot
+    
+    await db.delivery_requests.insert_one(delivery_dict)
+    
+    # 🔔 Send push notification to all validated drivers
+    asyncio.create_task(notify_drivers_new_delivery(delivery_dict))
+    
+    return delivery
+
+@api_router.get("/business/deliveries")
+async def get_business_deliveries(user: User = Depends(require_business)):
+    """Get all deliveries for a business"""
+    deliveries = await db.delivery_requests.find(
+        {"business_id": user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return deliveries
+
+# ========================
+# DRIVER ENDPOINTS
+# ========================
+
+@api_router.put("/driver/profile")
+async def update_driver_profile(data: DriverProfile, user: User = Depends(require_driver)):
+    """Update driver profile"""
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "name": data.name,
+            "vehicle_type": data.vehicle_type,
+            "vehicle_plate": data.vehicle_plate,
+            "vehicle_brand": data.vehicle_brand,
+            "accepted_item_types": data.accepted_item_types,
+            "refused_item_types": data.refused_item_types
+        }}
+    )
+    
+    updated_user = await db.users.find_one({"user_id": user.user_id}, {"_id": 0})
+    return updated_user
+
+@api_router.post("/driver/document")
+async def upload_driver_document(data: DriverDocument, user: User = Depends(require_driver)):
+    """Upload driver document"""
+    document = {
+        "document_id": f"doc_{uuid.uuid4().hex[:12]}",
+        "document_type": data.document_type,
+        "document_image": data.document_image,
+        "status": "pending",
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$push": {"documents": document}}
+    )
+    
+    return document
+
+@api_router.get("/driver/available-jobs")
+async def get_available_jobs(user: User = Depends(require_driver)):
+    """Get available delivery jobs for driver"""
+    # Get jobs matching driver's accepted item types
+    query = {"status": "pending"}
+    
+    if user.accepted_item_types:
+        query["item_type"] = {"$in": user.accepted_item_types}
+    if user.refused_item_types:
+        query["item_type"] = {"$nin": user.refused_item_types}
+    
+    jobs = await db.delivery_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return jobs
+
+@api_router.get("/driver/my-jobs")
+async def get_driver_jobs(user: User = Depends(require_driver)):
+    """Get driver's accepted jobs"""
+    jobs = await db.delivery_requests.find(
+        {"driver_id": user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return jobs
+
+@api_router.post("/driver/accept/{delivery_id}")
+async def accept_delivery(delivery_id: str, user: User = Depends(require_driver)):
+    """Accept a delivery job (first-come-first-serve)"""
+    # Check if driver is validated
+    if not user.is_validated:
+        raise HTTPException(status_code=403, detail="Votre profil n'est pas encore validé")
+    
+    # Check if driver already has an active delivery (not finished)
+    active_delivery = await db.delivery_requests.find_one({
+        "driver_id": user.user_id,
+        "status": {"$in": ["accepted", "pickup_confirmed"]}
+    })
+    
+    if active_delivery:
+        raise HTTPException(
+            status_code=400, 
+            detail="Vous avez déjà une livraison en cours. Terminez-la avant d'en accepter une nouvelle."
+        )
+    
+    # Try to accept the job (atomic operation)
+    result = await db.delivery_requests.update_one(
+        {"delivery_id": delivery_id, "status": "pending"},
+        {"$set": {
+            "status": "accepted",
+            "driver_id": user.user_id,
+            "driver_name": user.name,
+            "accepted_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Cette livraison n'est plus disponible")
+    
+    delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that delivery was accepted
+    asyncio.create_task(notify_business_delivery_accepted(delivery))
+    
+    return delivery
+
+@api_router.post("/driver/confirm-pickup/{delivery_id}")
+async def confirm_pickup(delivery_id: str, data: DeliveryConfirmPhoto = None, user: User = Depends(require_driver)):
+    """Confirm pickup - NO PHOTO REQUIRED"""
+    
+    update_data = {
+        "status": "pickup_confirmed",
+        "pickup_at": datetime.now(timezone.utc)
+    }
+    
+    # Photo is optional
+    if data and data.photo and len(data.photo) > 100:
+        update_data["pickup_photo"] = data.photo
+    
+    result = await db.delivery_requests.update_one(
+        {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "accepted"},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Impossible de confirmer la récupération")
+    
+    delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that package was picked up
+    asyncio.create_task(notify_business_delivery_picked_up(delivery))
+    
+    return delivery
+
+@api_router.post("/driver/confirm-delivery/{delivery_id}")
+async def confirm_delivery(delivery_id: str, data: DeliveryConfirmPhoto = None, user: User = Depends(require_driver)):
+    """Confirm delivery - PHOTO IS OPTIONAL"""
+    
+    update_data = {
+        "status": "delivered",
+        "delivered_at": datetime.now(timezone.utc)
+    }
+    
+    # Photo is optional
+    if data and data.photo and len(data.photo) > 100:
+        update_data["delivery_photo"] = data.photo
+    
+    result = await db.delivery_requests.update_one(
+        {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "pickup_confirmed"},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Impossible de confirmer la livraison")
+    
+    delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    
+    # 🔔 Notify business that delivery was completed
+    asyncio.create_task(notify_business_delivery_completed(delivery))
+    
+    return delivery
+
+@api_router.post("/driver/cancel/{delivery_id}")
+async def driver_cancel_delivery(delivery_id: str, user: User = Depends(require_driver)):
+    """Cancel a delivery - ONLY if not yet picked up (status = accepted)"""
+    
+    # Check if delivery exists and belongs to this driver with status "accepted"
+    delivery = await db.delivery_requests.find_one({
+        "delivery_id": delivery_id,
+        "driver_id": user.user_id,
+        "status": "accepted"
+    })
+    
+    if not delivery:
+        raise HTTPException(
+            status_code=400, 
+            detail="Impossible d'annuler. La livraison n'existe pas, ne vous appartient pas, ou le colis a déjà été récupéré."
+        )
+    
+    # Reset the delivery to pending status (so another driver can take it)
+    result = await db.delivery_requests.update_one(
+        {"delivery_id": delivery_id, "driver_id": user.user_id, "status": "accepted"},
+        {"$set": {
+            "status": "pending",
+            "driver_id": None,
+            "driver_name": None,
+            "accepted_at": None,
+            "cancelled_by_driver_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Impossible d'annuler la livraison")
+    
+    # Notify all drivers that a job is available again
+    updated_delivery = await db.delivery_requests.find_one({"delivery_id": delivery_id}, {"_id": 0})
+    asyncio.create_task(notify_drivers_new_delivery(updated_delivery))
+    
+    logger.info(f"📲 Driver {user.user_id} cancelled delivery {delivery_id}")
+    
+    return {"message": "Livraison annulée avec succès", "delivery_id": delivery_id}
+
+# ========================
+# ADMIN ENDPOINTS
+# ========================
+
+@api_router.get("/admin/dashboard")
+async def admin_dashboard(user: User = Depends(require_admin)):
+    """Get admin dashboard stats"""
+    total_deliveries = await db.delivery_requests.count_documents({})
+    pending_deliveries = await db.delivery_requests.count_documents({"status": "pending"})
+    active_deliveries = await db.delivery_requests.count_documents({"status": {"$in": ["accepted", "pickup_confirmed"]}})
+    completed_deliveries = await db.delivery_requests.count_documents({"status": "delivered"})
+    
+    total_drivers = await db.users.count_documents({"role": "driver"})
+    pending_drivers = await db.users.count_documents({"role": "driver", "is_validated": False})
+    
+    total_businesses = await db.users.count_documents({"role": "business"})
+    
+    # Calculate total revenue (commission)
+    pipeline = [
+        {"$match": {"status": "delivered"}},
+        {"$group": {"_id": None, "total_commission": {"$sum": "$commission"}}}
+    ]
+    revenue_result = await db.delivery_requests.aggregate(pipeline).to_list(1)
+    total_revenue = revenue_result[0]["total_commission"] if revenue_result else 0
+    
+    return {
+        "deliveries": {
+            "total": total_deliveries,
+            "pending": pending_deliveries,
+            "active": active_deliveries,
+            "completed": completed_deliveries
+        },
+        "drivers": {
+            "total": total_drivers,
+            "pending_validation": pending_drivers
+        },
+        "businesses": {
+            "total": total_businesses
+        },
+        "revenue": {
+            "total_commission": total_revenue
+        }
+    }
+
+@api_router.get("/admin/deliveries")
+async def admin_get_deliveries(status: Optional[str] = None, user: User = Depends(require_admin)):
+    """Get all deliveries with optional status filter"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    deliveries = await db.delivery_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return deliveries
+
+@api_router.get("/admin/drivers")
+async def admin_get_drivers(validated: Optional[bool] = None, user: User = Depends(require_admin)):
+    """Get all drivers"""
+    query = {"role": "driver"}
+    if validated is not None:
+        query["is_validated"] = validated
+    
+    drivers = await db.users.find(query, {"_id": 0}).to_list(500)
+    return drivers
+
+@api_router.post("/admin/validate-driver/{user_id}")
+async def validate_driver(user_id: str, user: User = Depends(require_admin)):
+    """Validate a driver"""
+    result = await db.users.update_one(
+        {"user_id": user_id, "role": "driver"},
+        {"$set": {"is_validated": True}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Chauffeur non trouvé")
+    
+    driver = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return driver
+
+@api_router.get("/admin/businesses")
+async def admin_get_businesses(user: User = Depends(require_admin)):
+    """Get all businesses with delivery stats using aggregation pipeline"""
+    # Use aggregation pipeline to avoid N+1 queries
+    pipeline = [
+        {"$match": {"role": "business"}},
+        {"$lookup": {
+            "from": "delivery_requests",
+            "localField": "user_id",
+            "foreignField": "business_id",
+            "as": "deliveries"
+        }},
+        {"$addFields": {
+            "stats": {
+                "total_deliveries": {"$size": "$deliveries"},
+                "pending": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$eq": ["$$this.status", "pending"]}
+                }}},
+                "in_progress": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$in": ["$$this.status", ["accepted", "pickup_confirmed"]]}
+                }}},
+                "completed": {"$size": {"$filter": {
+                    "input": "$deliveries",
+                    "cond": {"$eq": ["$$this.status", "delivered"]}
+                }}},
+                "total_spent": {"$sum": {
+                    "$map": {
+                        "input": {"$filter": {
+                            "input": "$deliveries",
+                            "cond": {"$eq": ["$$this.status", "delivered"]}
+                        }},
+                        "in": "$$this.total_price"
+                    }
+                }}
+            }
+        }},
+        {"$project": {"_id": 0, "deliveries": 0, "password_hash": 0}}
+    ]
+    
+    businesses = await db.users.aggregate(pipeline).to_list(500)
+    return businesses
+
+@api_router.get("/admin/businesses/{business_id}")
+async def admin_get_business_detail(business_id: str, user: User = Depends(require_admin)):
+    """Get detailed info for a specific business"""
+    business = await db.users.find_one({"user_id": business_id, "role": "business"}, {"_id": 0})
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Boutique non trouvée")
+    
+    # Get all deliveries for this business
+    deliveries = await db.delivery_requests.find(
+        {"business_id": business_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Calculate stats
+    total_deliveries = len(deliveries)
+    pending = len([d for d in deliveries if d.get("status") == "pending"])
+    in_progress = len([d for d in deliveries if d.get("status") in ["accepted", "pickup_confirmed"]])
+    completed = len([d for d in deliveries if d.get("status") == "delivered"])
+    cancelled = len([d for d in deliveries if d.get("status") == "cancelled"])
+    total_spent = sum(d.get("total_price", 0) for d in deliveries if d.get("status") == "delivered")
+    
+    return {
+        "business": business,
+        "deliveries": deliveries,
+        "stats": {
+            "total_deliveries": total_deliveries,
+            "pending": pending,
+            "in_progress": in_progress,
+            "completed": completed,
+            "cancelled": cancelled,
+            "total_spent": total_spent
+        }
+    }
+
+# Pricing Management
+@api_router.get("/admin/pricing")
+async def get_pricing_rules(user: User = Depends(require_admin)):
+    """Get all pricing rules"""
+    rules = await db.pricing_rules.find({}, {"_id": 0}).sort("min_distance", 1).to_list(100)
+    settings = await db.platform_settings.find_one({"setting_type": "commission"}, {"_id": 0})
+    
+    return {
+        "rules": rules,
+        "commission_percentage": settings.get("commission_percentage", 15.0) if settings else 15.0
+    }
+
+@api_router.post("/admin/pricing")
+async def create_pricing_rule(data: PricingRuleCreate, user: User = Depends(require_admin)):
+    """Create a new pricing rule"""
+    rule = PricingRule(
+        min_distance=data.min_distance,
+        max_distance=data.max_distance,
+        price=data.price
+    )
+    
+    await db.pricing_rules.insert_one(rule.dict())
+    return rule
+
+@api_router.put("/admin/pricing/{rule_id}")
+async def update_pricing_rule(rule_id: str, data: PricingRuleCreate, user: User = Depends(require_admin)):
+    """Update a pricing rule"""
+    result = await db.pricing_rules.update_one(
+        {"rule_id": rule_id},
+        {"$set": {
+            "min_distance": data.min_distance,
+            "max_distance": data.max_distance,
+            "price": data.price,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Règle non trouvée")
+    
+    rule = await db.pricing_rules.find_one({"rule_id": rule_id}, {"_id": 0})
+    return rule
+
+@api_router.delete("/admin/pricing/{rule_id}")
+async def delete_pricing_rule(rule_id: str, user: User = Depends(require_admin)):
+    """Delete a pricing rule"""
+    result = await db.pricing_rules.delete_one({"rule_id": rule_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Règle non trouvée")
+    
+    return {"message": "Règle supprimée"}
+
+@api_router.put("/admin/commission")
+async def update_commission(commission_percentage: float, user: User = Depends(require_admin)):
+    """Update platform commission percentage"""
+    await db.platform_settings.update_one(
+        {"setting_type": "commission"},
+        {"$set": {
+            "commission_percentage": commission_percentage,
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    
+    return {"commission_percentage": commission_percentage}
+
+# ========================
+# PUBLIC ENDPOINTS
+# ========================
+
+@api_router.get("/")
+async def root():
+    return {"message": "Fluxy Logistique API - Livraison d'articles lourds"}
+
+@api_router.get("/item-types")
+async def get_item_types():
+    """Get available item types"""
+    return [
+        {"id": "meubles", "label": "Meubles"},
+        {"id": "electromenager", "label": "Électroménager"},
+        {"id": "materiaux", "label": "Matériaux de construction"},
+        {"id": "equipements", "label": "Équipements industriels"},
+        {"id": "colis_lourds", "label": "Colis lourds"},
+        {"id": "autres", "label": "Autres"}
+    ]
+
+@api_router.get("/time-slots")
+async def get_time_slots():
+    """Get available time slots"""
+    return [
+        {"id": "asap", "label": "Dès que possible"},
+        {"id": "1-2h", "label": "1 à 2 heures"},
+        {"id": "2-4h", "label": "2 à 4 heures"},
+        {"id": "4-8h", "label": "4 à 8 heures"}
+    ]
+
+# Include the router in the main app
+app.include_router(api_router)
+
+# Serve admin panel at /api/admin
+@app.get("/api/admin")
+async def admin_panel():
+    """Serve admin panel"""
+    return FileResponse(ROOT_DIR / "static" / "admin.html")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database with default data"""
+    # Create default pricing rules if none exist
+    rules_count = await db.pricing_rules.count_documents({})
+    if rules_count == 0:
+        default_rules = [
+            {"rule_id": "rule_1", "min_distance": 0, "max_distance": 5, "price": 20000, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)},
+            {"rule_id": "rule_2", "min_distance": 5, "max_distance": 10, "price": 35000, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)},
+            {"rule_id": "rule_3", "min_distance": 10, "max_distance": 20, "price": 50000, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)},
+            {"rule_id": "rule_4", "min_distance": 20, "max_distance": 50, "price": 75000, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)},
+        ]
+        await db.pricing_rules.insert_many(default_rules)
+        logger.info("Default pricing rules created")
+    
+    # Create default commission settings if not exist
+    settings = await db.platform_settings.find_one({"setting_type": "commission"})
+    if not settings:
+        await db.platform_settings.insert_one({
+            "setting_type": "commission",
+            "commission_percentage": 15.0,
+            "updated_at": datetime.now(timezone.utc)
+        })
+        logger.info("Default commission settings created")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
