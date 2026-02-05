@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "extra": {
+      "backendUrl": "https://api.fluxy-logistique.com",
       "eas": {
         "projectId": "f3261443-ae67-494f-a854-cd498bee282b"
       }
