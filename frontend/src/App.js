@@ -38,7 +38,7 @@ const Navigation = () => {
             <a href="#how-it-works" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-how">Comment ça marche</a>
             <a href="#download" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-download">Télécharger</a>
             <a href="#contact" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-contact">Contact</a>
-            <a href="/api/admin" className="btn-primary text-sm py-3 px-6" data-testid="nav-admin">Admin</a>
+            <a href={`${BACKEND_URL}/api/admin`} className="btn-primary text-sm py-3 px-6" data-testid="nav-admin">Admin</a>
           </div>
 
           {/* Mobile Menu Button */}
