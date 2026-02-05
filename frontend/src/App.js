@@ -38,7 +38,7 @@ const Navigation = () => {
             <a href="#how-it-works" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-how">Comment ça marche</a>
             <a href="#download" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-download">Télécharger</a>
             <a href="#contact" className={`font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white/80 hover:text-white'}`} data-testid="nav-contact">Contact</a>
-            <a href={`${BACKEND_URL}/api/admin`} className="btn-primary text-sm py-3 px-6" data-testid="nav-admin">Admin</a>
+            <a href="/admin" className="btn-primary text-sm py-3 px-6" data-testid="nav-admin">Admin</a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -58,7 +58,7 @@ const Navigation = () => {
             <a href="#how-it-works" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Comment ça marche</a>
             <a href="#download" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Télécharger</a>
             <a href="#contact" className="block text-slate-600 font-medium py-2" onClick={() => setIsOpen(false)}>Contact</a>
-            <a href={`${BACKEND_URL}/api/admin`} className="btn-primary block text-center">Admin</a>
+            <a href="/admin" className="btn-primary block text-center">Admin</a>
           </div>
         )}
       </div>
@@ -577,7 +577,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li><a href="/conditions" className="text-slate-400 hover:text-white transition-colors">Conditions d'utilisation</a></li>
               <li><a href="/confidentialite" className="text-slate-400 hover:text-white transition-colors">Politique de confidentialité</a></li>
-              <li><a href={`${BACKEND_URL}/api/admin`} className="text-slate-400 hover:text-white transition-colors">Administration</a></li>
+              <li><a href="/admin" className="text-slate-400 hover:text-white transition-colors">Administration</a></li>
             </ul>
           </div>
         </div>
