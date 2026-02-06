@@ -18,6 +18,7 @@ export default function DeliveryDetail() {
   const { getBusinessDeliveries } = useApi();
   const [delivery, setDelivery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     loadDelivery();
