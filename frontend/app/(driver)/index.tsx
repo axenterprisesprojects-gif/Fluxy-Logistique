@@ -302,6 +302,14 @@ export default function DriverHome() {
           </View>
         </View>
 
+        {/* Time posted */}
+        <View style={styles.timePostedRow}>
+          <Ionicons name="time-outline" size={14} color={COLORS.gray[500]} />
+          <Text style={styles.timePostedText}>
+            {formatTimeAgo(item.created_at)} • {formatTime(item.created_at)}
+          </Text>
+        </View>
+
         {/* Time slot */}
         {item.time_slot && (
           <View style={styles.timeSlotRow}>
