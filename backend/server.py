@@ -919,6 +919,7 @@ async def create_delivery(data: DeliveryRequestCreate, user: User = Depends(requ
         customer_name=data.customer_name,
         customer_phone=data.customer_phone,
         item_description=data.item_description,
+        item_type=data.item_description or "Colis",  # Use item_description as item_type
         time_slot=data.pickup_time_slot,  # Store pickup time slot
         distance_km=distance,
         total_price=total_price,
