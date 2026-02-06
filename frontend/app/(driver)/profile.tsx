@@ -132,25 +132,42 @@ export default function DriverProfile() {
     console.log('🔴 LOGOUT: Starting logout...');
     
     try {
-      // 1. Clear storage first
+      // 1. Clear all storage
       await AsyncStorage.clear();
+      await AsyncStorage.removeItem('session_token');
+      await AsyncStorage.removeItem('user');
       
       // 2. Call context logout
       await logout();
       
-      console.log('🔴 LOGOUT: Navigating...');
+      console.log('🔴 LOGOUT: Storage cleared, navigating...');
       
-      // 3. Navigate with a small delay to ensure state is cleared
-      setTimeout(() => {
-        if (Platform.OS === 'web') {
-          window.location.href = '/';
-        } else {
+      // 3. Force navigation - use while loop to ensure it works
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+      } else {
+        // On mobile, use replace with a slight delay and retry logic
+        const navigate = () => {
+          try {
+            router.dismissAll();
+          } catch (e) {
+            // Ignore if no screens to dismiss
+          }
           router.replace('/');
-        }
-      }, 100);
+        };
+        
+        // Try immediately
+        navigate();
+        
+        // And also try after a delay as backup
+        setTimeout(navigate, 200);
+      }
     } catch (error) {
       console.error('Logout error:', error);
       // Force navigation even on error
+      try {
+        router.dismissAll();
+      } catch (e) {}
       router.replace('/');
     }
   };
