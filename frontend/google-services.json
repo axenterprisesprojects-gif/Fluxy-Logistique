@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "44597739624",
+    "project_id": "fluxy-logistique",
+    "storage_bucket": "fluxy-logistique.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44597739624:android:b2efd584d4fc26710dbbdd",
+        "android_client_info": {
+          "package_name": "com.fluxylogistique.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDx1OJTNXnfMfxKGawgA8vNMyqkna_pKfk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
