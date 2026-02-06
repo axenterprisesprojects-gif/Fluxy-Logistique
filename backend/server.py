@@ -995,10 +995,14 @@ async def get_available_jobs(user: User = Depends(require_driver)):
     # Get jobs matching driver's accepted item types
     query = {"status": "pending"}
     
-    if user.accepted_item_types:
+    # Only filter by item types if the driver has specific preferences
+    if user.accepted_item_types and len(user.accepted_item_types) > 0:
         query["item_type"] = {"$in": user.accepted_item_types}
-    if user.refused_item_types:
-        query["item_type"] = {"$nin": user.refused_item_types}
+    if user.refused_item_types and len(user.refused_item_types) > 0:
+        if "item_type" in query:
+            query["item_type"]["$nin"] = user.refused_item_types
+        else:
+            query["item_type"] = {"$nin": user.refused_item_types}
     
     jobs = await db.delivery_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     
