@@ -267,7 +267,79 @@ export default function DeliveryDetail() {
             style={styles.callButton}
           />
         )}
+
+        {/* Photos de preuve */}
+        {(delivery.pickup_photo || delivery.delivery_photo) && (
+          <>
+            <Text style={styles.sectionTitle}>Photos de preuve</Text>
+            <View style={styles.photosContainer}>
+              {delivery.pickup_photo && (
+                <TouchableOpacity 
+                  style={styles.photoCard}
+                  onPress={() => setSelectedPhoto(delivery.pickup_photo)}
+                >
+                  <Image 
+                    source={{ uri: delivery.pickup_photo }} 
+                    style={styles.photoThumbnail}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.photoLabel}>
+                    <Ionicons name="cube" size={14} color={COLORS.warning} />
+                    <Text style={styles.photoLabelText}>Récupération</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              {delivery.delivery_photo && (
+                <TouchableOpacity 
+                  style={styles.photoCard}
+                  onPress={() => setSelectedPhoto(delivery.delivery_photo)}
+                >
+                  <Image 
+                    source={{ uri: delivery.delivery_photo }} 
+                    style={styles.photoThumbnail}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.photoLabel}>
+                    <Ionicons name="checkmark-circle" size={14} color={COLORS.secondary} />
+                    <Text style={styles.photoLabelText}>Livraison</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      {/* Modal pour voir la photo en grand */}
+      <Modal
+        visible={!!selectedPhoto}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedPhoto(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalCloseArea} 
+            onPress={() => setSelectedPhoto(null)}
+          >
+            <View style={styles.modalContent}>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setSelectedPhoto(null)}
+              >
+                <Ionicons name="close" size={28} color={COLORS.white} />
+              </TouchableOpacity>
+              {selectedPhoto && (
+                <Image 
+                  source={{ uri: selectedPhoto }} 
+                  style={styles.fullPhoto}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
