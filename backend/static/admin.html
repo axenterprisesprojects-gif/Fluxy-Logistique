@@ -1033,21 +1033,153 @@
                 const deliveries = await res.json();
                 
                 const tbody = document.getElementById('allDeliveriesTable');
-                tbody.innerHTML = deliveries.map(d => `
-                    <tr>
-                        <td>${d.delivery_id.slice(-8)}</td>
-                        <td>${d.item_type}</td>
+                tbody.innerHTML = deliveries.map(d => {
+                    const createdDate = new Date(d.created_at);
+                    const dateStr = createdDate.toLocaleDateString('fr-FR');
+                    const timeStr = createdDate.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+                    return `
+                    <tr style="cursor: pointer;" onclick="showDeliveryDetail('${d.delivery_id}')">
+                        <td>${dateStr}</td>
+                        <td>${timeStr}</td>
                         <td>${d.business_name}</td>
-                        <td>${d.destination_area}</td>
-                        <td>${d.distance_km} km</td>
-                        <td>${d.total_price.toLocaleString()} F</td>
-                        <td>${d.driver_name || '-'}</td>
+                        <td>${d.customer_name || '-'}</td>
+                        <td>${d.time_slot || '-'}</td>
+                        <td>${d.driver_name || '<span style="color: #9CA3AF;">Non assigné</span>'}</td>
+                        <td>${d.total_price?.toLocaleString() || 0} F</td>
                         <td><span class="status-badge status-${d.status}">${getStatusLabel(d.status)}</span></td>
+                        <td><button class="btn btn-outline" onclick="event.stopPropagation(); showDeliveryDetail('${d.delivery_id}')">Voir</button></td>
                     </tr>
-                `).join('');
+                `}).join('');
+                
+                // Store deliveries for detail view
+                window.allDeliveries = deliveries;
             } catch (e) {
                 console.error(e);
             }
+        }
+        
+        function showDeliveryDetail(deliveryId) {
+            const delivery = window.allDeliveries?.find(d => d.delivery_id === deliveryId);
+            if (!delivery) return;
+            
+            const createdDate = new Date(delivery.created_at);
+            const acceptedDate = delivery.accepted_at ? new Date(delivery.accepted_at) : null;
+            const pickedDate = delivery.picked_up_at ? new Date(delivery.picked_up_at) : null;
+            const deliveredDate = delivery.delivered_at ? new Date(delivery.delivered_at) : null;
+            
+            const content = `
+                <div style="display: grid; gap: 20px;">
+                    <!-- Status -->
+                    <div style="text-align: center; padding: 16px; background: #F3F4F6; border-radius: 12px;">
+                        <span class="status-badge status-${delivery.status}" style="font-size: 16px; padding: 8px 16px;">
+                            ${getStatusLabel(delivery.status)}
+                        </span>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">CHRONOLOGIE</h3>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="width: 24px; height: 24px; background: #2563EB; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</span>
+                                <div>
+                                    <div style="font-weight: 600;">Commande créée</div>
+                                    <div style="font-size: 12px; color: #6B7280;">${createdDate.toLocaleString('fr-FR')}</div>
+                                </div>
+                            </div>
+                            ${acceptedDate ? `
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="width: 24px; height: 24px; background: #F59E0B; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</span>
+                                <div>
+                                    <div style="font-weight: 600;">Acceptée par ${delivery.driver_name || 'chauffeur'}</div>
+                                    <div style="font-size: 12px; color: #6B7280;">${acceptedDate.toLocaleString('fr-FR')}</div>
+                                </div>
+                            </div>` : ''}
+                            ${pickedDate ? `
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="width: 24px; height: 24px; background: #8B5CF6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</span>
+                                <div>
+                                    <div style="font-weight: 600;">Colis récupéré</div>
+                                    <div style="font-size: 12px; color: #6B7280;">${pickedDate.toLocaleString('fr-FR')}</div>
+                                </div>
+                            </div>` : ''}
+                            ${deliveredDate ? `
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="width: 24px; height: 24px; background: #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</span>
+                                <div>
+                                    <div style="font-weight: 600;">Livré</div>
+                                    <div style="font-size: 12px; color: #6B7280;">${deliveredDate.toLocaleString('fr-FR')}</div>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Info Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">COMMERCE</h3>
+                            <div style="font-weight: 600;">${delivery.business_name}</div>
+                            <div style="font-size: 14px; color: #6B7280; margin-top: 4px;">${delivery.pickup_neighborhood || delivery.pickup_address || '-'}</div>
+                        </div>
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">CLIENT</h3>
+                            <div style="font-weight: 600;">${delivery.customer_name || 'Non spécifié'}</div>
+                            <div style="font-size: 14px; color: #6B7280; margin-top: 4px;">${delivery.customer_phone || '-'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">DESTINATION</h3>
+                            <div style="font-weight: 600;">${delivery.delivery_neighborhood || delivery.destination_area || '-'}</div>
+                            <div style="font-size: 14px; color: #6B7280; margin-top: 4px;">${delivery.delivery_address || '-'}</div>
+                        </div>
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">CHAUFFEUR</h3>
+                            <div style="font-weight: 600;">${delivery.driver_name || 'Non assigné'}</div>
+                            <div style="font-size: 14px; color: #6B7280; margin-top: 4px;">${delivery.driver_phone || '-'}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Article & Price -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                        <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">ARTICLE</h3>
+                            <div style="font-weight: 600;">${delivery.item_type || 'Colis'}</div>
+                            <div style="font-size: 14px; color: #6B7280; margin-top: 4px;">Distance: ${delivery.distance_km || 0} km</div>
+                        </div>
+                        <div style="background: #2563EB; padding: 16px; border-radius: 12px; color: white; text-align: center;">
+                            <h3 style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.8;">PRIX</h3>
+                            <div style="font-size: 24px; font-weight: 700;">${delivery.total_price?.toLocaleString() || 0} F</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Photos -->
+                    ${(delivery.pickup_photo || delivery.delivery_photo) ? `
+                    <div style="background: #F9FAFB; padding: 16px; border-radius: 12px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">PHOTOS DE PREUVE</h3>
+                        <div style="display: flex; gap: 12px;">
+                            ${delivery.pickup_photo ? `
+                            <div style="flex: 1;">
+                                <img src="${delivery.pickup_photo}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;" onclick="window.open('${delivery.pickup_photo}', '_blank')">
+                                <div style="text-align: center; margin-top: 4px; font-size: 12px; color: #6B7280;">Récupération</div>
+                            </div>` : ''}
+                            ${delivery.delivery_photo ? `
+                            <div style="flex: 1;">
+                                <img src="${delivery.delivery_photo}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${delivery.delivery_photo}', '_blank')">
+                                <div style="text-align: center; margin-top: 4px; font-size: 12px; color: #6B7280;">Livraison</div>
+                            </div>` : ''}
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+            
+            document.getElementById('deliveryDetailContent').innerHTML = content;
+            document.getElementById('deliveryDetailModal').style.display = 'block';
+        }
+        
+        function closeDeliveryModal() {
+            document.getElementById('deliveryDetailModal').style.display = 'none';
         }
         
         async function loadDrivers() {
