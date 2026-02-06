@@ -635,18 +635,30 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Article</th>
-                                <th>Entreprise</th>
-                                <th>Destination</th>
-                                <th>Distance</th>
-                                <th>Prix</th>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Commerce</th>
+                                <th>Client</th>
+                                <th>Créneau</th>
                                 <th>Chauffeur</th>
+                                <th>Prix</th>
                                 <th>Statut</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="allDeliveriesTable"></tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Delivery Detail Modal -->
+            <div id="deliveryDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+                <div style="background: white; max-width: 700px; margin: 50px auto; border-radius: 16px; padding: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">Détails de la livraison</h2>
+                        <button onclick="closeDeliveryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+                    </div>
+                    <div id="deliveryDetailContent"></div>
                 </div>
             </div>
             
