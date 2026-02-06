@@ -1021,6 +1021,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  timePostedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  timePostedText: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+  },
   itemsSection: {
     backgroundColor: COLORS.gray[50],
     borderRadius: 10,
