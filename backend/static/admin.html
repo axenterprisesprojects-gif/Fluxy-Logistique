@@ -1472,36 +1472,28 @@
         
         async function sendTestToUser(userId, userName) {
             const resultDiv = document.getElementById('notifResult');
+            console.log('Envoi notification à:', userId, userName);
             
             try {
-                const res = await fetch(`${API_BASE}/admin/test-notification`, {
+                const res = await fetch('/api/admin/test-notification', {
                     method: 'POST',
                     headers: { 
-                        'Authorization': `Bearer ${sessionToken}`,
+                        'Authorization': 'Bearer ' + sessionToken,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ 
                         target: userId, 
                         title: 'Test Notification', 
-                        message: `Bonjour ${userName}, ceci est un test! 🎉`
+                        message: 'Bonjour ' + userName + ', ceci est un test! 🎉'
                     })
                 });
                 
                 const data = await res.json();
-                
-                resultDiv.style.display = 'block';
-                if (data.success) {
-                    resultDiv.style.background = '#D1FAE5';
-                    resultDiv.style.color = '#065F46';
-                    resultDiv.textContent = `✅ Notification envoyée à ${userName}`;
-                } else {
-                    resultDiv.style.background = '#FEF3C7';
-                    resultDiv.style.color = '#92400E';
-                    resultDiv.textContent = `⚠️ ${data.message}`;
-                }
+                console.log('Réponse:', data);
+                alert(data.success ? '✅ Notification envoyée!' : '❌ ' + data.message);
             } catch (e) {
-                console.error(e);
-                alert('Erreur lors de l\'envoi');
+                console.error('Erreur:', e);
+                alert('Erreur: ' + e.message);
             }
         }
     </script>
