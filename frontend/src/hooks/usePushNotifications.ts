@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
 });
 
 // Use Constants.expoConfig.extra for production builds
-const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://api.fluxy-logistique.com';
 
 export interface PushNotificationState {
   expoPushToken: string | null;
