@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fluxylogistique",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "extra": {
       "backendUrl": "https://api.fluxy-logistique.com",
       "eas": {
