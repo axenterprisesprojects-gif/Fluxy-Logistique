@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Use Constants.expoConfig.extra for production builds, fallback to env for development
-const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || 'https://api.fluxy-logistique.com';
 
 export type UserRole = 'business' | 'driver' | 'admin';
 
