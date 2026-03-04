@@ -32,19 +32,28 @@ export function usePushNotifications(sessionToken: string | null) {
 
   useEffect(() => {
     // Register for push notifications
+    console.log('🔔 Starting push notification registration...');
+    console.log('🔔 sessionToken:', sessionToken ? 'present' : 'null');
+    
     registerForPushNotificationsAsync()
       .then(token => {
+        console.log('🔔 Token result:', token);
         if (token) {
           setExpoPushToken(token);
           // Send token to backend if user is logged in
           if (sessionToken) {
+            console.log('🔔 Sending token to backend...');
             sendTokenToBackend(token, sessionToken);
+          } else {
+            console.log('🔔 No sessionToken yet, will send when available');
           }
+        } else {
+          console.log('🔔 No token obtained');
         }
       })
       .catch(err => {
         setError(err.message);
-        console.error('Push notification error:', err);
+        console.error('🔔 Push notification error:', err);
       });
 
     // Listen for incoming notifications
@@ -75,7 +84,11 @@ export function usePushNotifications(sessionToken: string | null) {
 
   // Re-send token when sessionToken changes (user logs in)
   useEffect(() => {
+    console.log('🔔 sessionToken changed:', sessionToken ? 'present' : 'null');
+    console.log('🔔 expoPushToken:', expoPushToken ? expoPushToken.substring(0, 30) + '...' : 'null');
+    
     if (expoPushToken && sessionToken) {
+      console.log('🔔 Both present, sending to backend...');
       sendTokenToBackend(expoPushToken, sessionToken);
     }
   }, [sessionToken, expoPushToken]);
@@ -145,8 +158,16 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 }
 
 async function sendTokenToBackend(token: string, sessionToken: string): Promise<void> {
+  console.log('🚀 sendTokenToBackend called');
+  console.log('🔗 BACKEND_URL:', BACKEND_URL);
+  console.log('🎫 Token:', token);
+  console.log('🔐 SessionToken:', sessionToken ? 'present' : 'missing');
+  
   try {
-    const response = await fetch(`${BACKEND_URL}/api/user/push-token`, {
+    const url = `${BACKEND_URL}/api/user/push-token`;
+    console.log('📤 Sending to:', url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -155,13 +176,16 @@ async function sendTokenToBackend(token: string, sessionToken: string): Promise<
       body: JSON.stringify({ push_token: token }),
     });
     
+    console.log('📥 Response status:', response.status);
+    
     if (response.ok) {
-      console.log('Push token registered with backend');
+      console.log('✅ Push token registered with backend');
     } else {
-      console.error('Failed to register push token:', await response.text());
+      const errorText = await response.text();
+      console.error('❌ Failed to register push token:', errorText);
     }
   } catch (err) {
-    console.error('Error sending push token to backend:', err);
+    console.error('💥 Error sending push token to backend:', err);
   }
 }
 
